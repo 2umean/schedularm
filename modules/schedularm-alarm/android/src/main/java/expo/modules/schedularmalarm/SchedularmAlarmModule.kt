@@ -1,0 +1,111 @@
+package expo.modules.schedularmalarm
+
+import android.Manifest
+import android.app.AlarmManager
+import android.app.NotificationManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationManagerCompat
+import expo.modules.kotlin.Promise
+import expo.modules.kotlin.exception.Exceptions
+import expo.modules.kotlin.modules.Module
+import expo.modules.kotlin.modules.ModuleDefinition
+
+class SchedularmAlarmModule : Module() {
+  private val context: Context
+    get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
+
+  override fun definition() = ModuleDefinition {
+    Name("SchedularmAlarm")
+
+    // JS numbers arrive as Double; epoch ms exceeds Int range, so use Double → Long.
+    Function("scheduleAlarm") { epochMs: Double ->
+      AlarmController.scheduleAlarm(context, epochMs.toLong())
+    }
+
+    Function("dismiss") {
+      AlarmController.dismiss(context)
+    }
+
+    Function("canScheduleExactAlarms") { canScheduleExactAlarms() }
+
+    Function("canUseFullScreenIntent") { canUseFullScreenIntent() }
+
+    Function("canPostNotifications") { canPostNotifications() }
+
+    Function("getPermissionsStatus") { permissionsStatus() }
+
+    AsyncFunction("requestPermissions") { promise: Promise ->
+      requestMostCriticalMissingPermission()
+      promise.resolve(permissionsStatus())
+    }
+  }
+
+  // --- Permission checks ------------------------------------------------------
+
+  private fun canScheduleExactAlarms(): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
+    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    return alarmManager.canScheduleExactAlarms()
+  }
+
+  private fun canUseFullScreenIntent(): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return true
+    val notificationManager =
+      context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    return notificationManager.canUseFullScreenIntent()
+  }
+
+  private fun canPostNotifications(): Boolean =
+    NotificationManagerCompat.from(context).areNotificationsEnabled()
+
+  private fun permissionsStatus(): Map<String, Any> = mapOf(
+    "canScheduleExactAlarms" to canScheduleExactAlarms(),
+    "canUseFullScreenIntent" to canUseFullScreenIntent(),
+    "canPostNotifications" to canPostNotifications()
+  )
+
+  // --- Permission routing -----------------------------------------------------
+
+  /**
+   * Route the user to fix the single most critical missing permission.
+   * Order: notifications (runtime prompt) → exact alarm → full-screen intent.
+   * One per call to avoid stacking settings screens.
+   */
+  private fun requestMostCriticalMissingPermission() {
+    val activity = appContext.currentActivity
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+      !canPostNotifications() && activity != null
+    ) {
+      ActivityCompat.requestPermissions(
+        activity,
+        arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+        AlarmConstants.REQ_PERMISSION_NOTIFICATIONS
+      )
+      return
+    }
+
+    if (!canScheduleExactAlarms()) {
+      openSettings(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+      return
+    }
+
+    if (!canUseFullScreenIntent()) {
+      openSettings(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT)
+      return
+    }
+  }
+
+  private fun openSettings(action: String) {
+    val intent = Intent(action).apply {
+      data = Uri.parse("package:${context.packageName}")
+      addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    (appContext.currentActivity ?: context).startActivity(intent)
+  }
+}
