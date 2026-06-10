@@ -31,3 +31,21 @@
 2. Implement the **full-screen-over-lock hardening** (overlay permission + direct-activity fallback) — issue #1 above.
 3. The **OEM battery-whitelist onboarding is REQUIRED** (spec §8), not optional — bake into first-run.
 4. Keep reboot / Doze / app-kill / sustained-loop as an **on-device release-gate checklist** (use the instrumented spike build).
+
+---
+
+# Plan 2 hardening retest (2026-06-11, S24+, Plan 2 dev build)
+
+Dev client: EAS build d1c4dacf (all Plan 2 native hardening: SYSTEM_ALERT_WINDOW + overlay-gated direct launch + battery/manufacturer checks).
+
+| Behavior | Result |
+|---|---|
+| **Auto full-screen activity over the LOCKED screen** (M0 open item #1) | ✅ **WORKS** — with "Appear on top" granted, the ring screen auto-launches full-screen over the lock screen (overlay-gated `startActivity` fallback from the FGS) |
+| First-run onboarding (battery step on Samsung, Continue gating) | ⏳ pending report |
+| Reboot re-arm (M0 open item #2) | ⏳ pending |
+| Silent/DND, app-kill, forced Doze | ⏳ pending |
+| Armed-state relaunch restore, disarm, sticky presets | ⏳ pending |
+
+**Device findings fixed during testing:**
+1. Android time-picker double-dialog — the `display="spinner"` picker is itself a system dialog and stacked over the custom modal card. Fixed in `5b70125` (bare dialog on Android, commit via set/dismissed events; picker now also seeds from the edited row's current time).
+2. Fall-asleep / leave-home alerts were not part of Plan 2 scope (deferred to Plans 3/4) — user pulled forward as simple push alerts; implemented in `1e5e0aa` via expo-notifications (scheduled on arm, cancelled on disarm; wake stays the full native alarm). Requires the next dev build (1e1eb947).
