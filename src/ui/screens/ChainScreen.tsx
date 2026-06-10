@@ -15,6 +15,19 @@ import { formatClockWithDay, pickedTimeToInstant } from '../format';
 type DurationField = 'contingency' | 'travel' | 'prep' | 'sleep';
 type TimeField = 'arrival' | 'wake' | 'leaveHome' | 'fallAsleep';
 
+const TIME_LABEL: Record<TimeField, string> = {
+  arrival: 'arrival',
+  wake: 'wake up',
+  leaveHome: 'leave home',
+  fallAsleep: 'fall asleep',
+};
+const DURATION_LABEL: Record<DurationField, string> = {
+  contingency: 'contingency',
+  travel: 'travel',
+  prep: 'prep',
+  sleep: 'sleep',
+};
+
 const ISSUE_TEXT = (i: ValidationIssue): string => {
   switch (i.kind) {
     case 'infeasible':
@@ -41,18 +54,20 @@ export function ChainScreen() {
   const ref = schedule?.arrival ?? nowMs;
   const fmt = (ms: number) => formatClockWithDay(ms, ref, zone);
 
-  const armedSummary =
-    armed != null
-      ? {
-          wake: formatClockWithDay(reverseCalc(armed).wake, ref, zone).clock,
-          leave: formatClockWithDay(reverseCalc(armed).leaveHome, ref, zone).clock,
-        }
-      : null;
+  const armedSummary = (() => {
+    if (armed == null) return null;
+    const d = reverseCalc(armed);
+    return {
+      wake: formatClockWithDay(d.wake, ref, zone).clock,
+      leave: formatClockWithDay(d.leaveHome, ref, zone).clock,
+    };
+  })();
 
   const onArm = async () => {
     if (!schedule || !armable) return;
-    await persistPresets(); // inline tweaks become sticky only on arm (spec §9)
     await arm(schedule);
+    // Sticky-on-arm (spec §9) — but presets are a convenience; never let their write block the alarm.
+    await persistPresets().catch(() => {});
   };
 
   const openTime = (field: TimeField) => setTimeEditor(field);
@@ -171,7 +186,7 @@ export function ChainScreen() {
       {timeEditor ? (
         <TimeEditorModal
           visible
-          title={`Set ${timeEditor}`}
+          title={`Set ${TIME_LABEL[timeEditor]}`}
           initial={new Date()}
           onCancel={() => setTimeEditor(null)}
           onConfirm={confirmTime}
@@ -181,7 +196,7 @@ export function ChainScreen() {
       {durationEditor ? (
         <DurationEditorModal
           visible
-          title={`Set ${durationEditor}`}
+          title={`Set ${DURATION_LABEL[durationEditor]}`}
           initialMinutes={state[durationEditor]}
           max={BOUNDS[durationEditor][1]}
           onCancel={() => setDurationEditor(null)}
