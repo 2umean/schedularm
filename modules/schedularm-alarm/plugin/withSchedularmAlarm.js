@@ -17,6 +17,10 @@ const PERMISSIONS = [
   { name: 'android.permission.WAKE_LOCK' },
   { name: 'android.permission.POST_NOTIFICATIONS' },
   { name: 'android.permission.VIBRATE' },
+  // "Appear on top" — enables the overlay-gated direct Activity launch (M0 fix #1).
+  { name: 'android.permission.SYSTEM_ALERT_WINDOW' },
+  // Lets the app request the battery-optimization exemption dialog (spec §8).
+  { name: 'android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS' },
 ];
 
 function addPermissions(manifest) {
