@@ -1,6 +1,9 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "strict": true
+    "strict": true,
+    // Auto-inclusion of @types fails under the base config's bundler resolution,
+    // leaving jest globals (test/expect) unresolved in *.test.ts. Pin it explicitly.
+    "types": ["jest"]
   }
 }
