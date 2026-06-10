@@ -1,6 +1,6 @@
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 type Props = {
   visible: boolean;
@@ -13,6 +13,27 @@ type Props = {
 
 export function TimeEditorModal({ visible, title, initial, onCancel, onConfirm }: Props) {
   const [value, setValue] = useState<Date>(initial);
+
+  // On Android the picker IS a system dialog with its own OK/Cancel — wrapping it
+  // in our Modal stacks two dialogs. Render it bare and commit from its events.
+  if (Platform.OS === 'android') {
+    if (!visible) return null;
+    return (
+      <DateTimePicker
+        value={initial}
+        mode="time"
+        is24Hour
+        display="spinner"
+        onChange={(e: DateTimePickerEvent, d?: Date) => {
+          if (e.type === 'set' && d) {
+            onConfirm(d.getHours(), d.getMinutes());
+          } else {
+            onCancel();
+          }
+        }}
+      />
+    );
+  }
 
   const onChange = (_e: DateTimePickerEvent, d?: Date) => {
     if (d) setValue(d);

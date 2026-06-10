@@ -71,6 +71,22 @@ export function ChainScreen() {
   };
 
   const openTime = (field: TimeField) => setTimeEditor(field);
+
+  /** Seed the picker with the field's current value so editing starts from it. */
+  const timeEditorInitial = (): Date => {
+    if (timeEditor === 'arrival' && schedule) return new Date(schedule.arrival);
+    if (timeEditor && timeEditor !== 'arrival' && derived) {
+      const base =
+        timeEditor === 'wake'
+          ? derived.wake
+          : timeEditor === 'leaveHome'
+            ? derived.leaveHome
+            : derived.fallAsleep;
+      return new Date(base);
+    }
+    return new Date();
+  };
+
   const confirmTime = (hour: number, minute: number) => {
     if (!timeEditor) return;
     if (timeEditor === 'arrival') {
@@ -187,7 +203,7 @@ export function ChainScreen() {
         <TimeEditorModal
           visible
           title={`Set ${TIME_LABEL[timeEditor]}`}
-          initial={new Date()}
+          initial={timeEditorInitial()}
           onCancel={() => setTimeEditor(null)}
           onConfirm={confirmTime}
         />
