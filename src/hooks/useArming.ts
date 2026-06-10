@@ -13,18 +13,24 @@ export function useArming() {
 
   // Restore a still-valid armed schedule so the banner survives relaunch.
   useEffect(() => {
+    let cancelled = false;
     refreshHealth();
     loadArmed().then((s) => {
+      if (cancelled) return;
       if (s && reverseCalc(s).wake > Date.now()) {
         setArmed(s);
       } else if (s) {
         clearArmed();
       }
     });
+    return () => {
+      cancelled = true;
+    };
   }, [refreshHealth]);
 
   const arm = useCallback(
     async (schedule: Schedule) => {
+      // Arm native FIRST — if persistence fails the alarm still rings (fail-safe).
       AlarmService.arm(schedule);
       await saveArmed(schedule);
       setArmed(schedule);
