@@ -34,11 +34,30 @@ class AlarmForegroundService : Service() {
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     startInForeground()
+    launchFullScreenIfPermitted()
     acquireWakeLock()
     startAudio()
     startVibration()
     // START_STICKY: if the OS kills us under memory pressure, come back ringing.
     return START_STICKY
+  }
+
+  /**
+   * On aggressive OEMs the full-screen INTENT only yields a heads-up banner over
+   * the lock screen. With SYSTEM_ALERT_WINDOW ("Appear on top") granted, a FGS may
+   * start an Activity from the background — so launch the ring screen directly as a
+   * fallback. The full-screen intent still fires; whichever surfaces first wins.
+   */
+  private fun launchFullScreenIfPermitted() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) return
+    try {
+      val intent = Intent(this, AlarmActivity::class.java).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+      }
+      startActivity(intent)
+    } catch (e: Exception) {
+      Log.e(AlarmConstants.TAG, "Direct AlarmActivity launch failed", e)
+    }
   }
 
   override fun onDestroy() {
