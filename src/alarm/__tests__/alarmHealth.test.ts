@@ -53,3 +53,18 @@ test('battery not whitelisted is critical ONLY on an aggressive OEM', () => {
   expect(onPixel.reasons).not.toContain('battery-not-whitelisted');
   expect(onPixel.isArmReliable).toBe(true);
 });
+
+test('multiple simultaneous denials → ordered reasons list, isArmReliable false', () => {
+  const h = deriveHealth(
+    { ...allGranted, canPostNotifications: false, canScheduleExactAlarms: false },
+    'Google',
+  );
+  expect(h.reasons).toEqual(['notifications-denied', 'exact-alarm-denied']);
+  expect(h.isArmReliable).toBe(false);
+});
+
+test('empty manufacturer string → isAggressiveOEM false, isArmReliable true', () => {
+  const h = deriveHealth(allGranted, '');
+  expect(h.isAggressiveOEM).toBe(false);
+  expect(h.isArmReliable).toBe(true);
+});

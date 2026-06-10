@@ -24,9 +24,18 @@ export type AlarmHealth = {
 };
 
 /** Manufacturers that silently kill backgrounded alarms (spec §8, M0 RESULTS). */
-const AGGRESSIVE_OEMS = [
+const AGGRESSIVE_OEMS: ReadonlyArray<string> = [
   'samsung', 'xiaomi', 'redmi', 'poco', 'huawei', 'honor',
   'oneplus', 'oppo', 'vivo', 'realme', 'meizu',
+];
+
+// Critical = will silently drop the ring. overlay-denied only degrades the
+// lock-screen presentation (heads-up banner instead of auto full-screen).
+const CRITICAL: ReadonlyArray<HealthReason> = [
+  'notifications-denied',
+  'exact-alarm-denied',
+  'full-screen-denied',
+  'battery-not-whitelisted',
 ];
 
 export function deriveHealth(
@@ -44,14 +53,6 @@ export function deriveHealth(
     reasons.push('battery-not-whitelisted');
   }
 
-  // Critical = will silently drop the ring. overlay-denied only degrades the
-  // lock-screen presentation (heads-up banner instead of auto full-screen).
-  const CRITICAL: HealthReason[] = [
-    'notifications-denied',
-    'exact-alarm-denied',
-    'full-screen-denied',
-    'battery-not-whitelisted',
-  ];
   const isArmReliable = !reasons.some((r) => CRITICAL.includes(r));
 
   return { reasons, isArmReliable, isAggressiveOEM };
