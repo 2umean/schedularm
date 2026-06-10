@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import * as native from '../../modules/schedularm-alarm';
 import { Schedule, reverseCalc } from '../domain';
 import { AlarmHealth, deriveHealth } from './alarmHealth';
+import { cancelChainAlerts, scheduleChainAlerts } from './chainAlerts';
 
 const isAndroid = Platform.OS === 'android';
 
@@ -18,12 +19,16 @@ export const AlarmService = {
   arm(schedule: Schedule): void {
     if (!isAndroid) return;
     native.scheduleAlarm(reverseCalc(schedule).wake);
+    // Companion fall-asleep/leave-home push alerts — best-effort, never
+    // allowed to affect the alarm itself (fire-and-forget, errors swallowed).
+    void scheduleChainAlerts(schedule);
   },
 
   /** Cancel any ringing + scheduled alarm (also clears native boot re-arm). */
   dismiss(): void {
     if (!isAndroid) return;
     native.dismiss();
+    void cancelChainAlerts();
   },
 
   /** Current health snapshot (permissions + OEM). */
