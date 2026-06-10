@@ -1,4 +1,4 @@
-import { Dispatch, useEffect, useMemo, useReducer, useState } from 'react';
+import { useEffect, useMemo, useReducer, useState } from 'react';
 import { DateTime } from 'luxon';
 
 import { isArmable, reverseCalc, validate } from '../domain';
@@ -13,7 +13,7 @@ import {
 const NOW_TICK_MS = 60_000;
 
 export function useSchedule() {
-  const zone = DateTime.local().zoneName ?? 'UTC';
+  const zone = useMemo(() => DateTime.local().zoneName ?? 'UTC', []);
   const [state, dispatch] = useReducer(scheduleReducer, undefined, () =>
     initialState(SEED_DEFAULTS, zone),
   );
@@ -47,6 +47,7 @@ export function useSchedule() {
   );
   const armable = schedule != null && isArmable(issues);
 
+  // Not memoized — use from event handlers only, never as an effect/memo dep.
   /** Persist the current durations as the new sticky presets (call when arming). */
   const persistPresets = () =>
     savePresets({
@@ -64,7 +65,7 @@ export function useSchedule() {
     issues,
     armable,
     nowMs,
-    dispatch: dispatch as Dispatch<ScheduleAction>,
+    dispatch,
     persistPresets,
   };
 }
