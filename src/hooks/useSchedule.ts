@@ -3,12 +3,7 @@ import { DateTime } from 'luxon';
 
 import { isArmable, reverseCalc, validate } from '../domain';
 import { loadPresets, savePresets, SEED_DEFAULTS } from '../storage/presets';
-import {
-  ScheduleAction,
-  initialState,
-  scheduleReducer,
-  toSchedule,
-} from '../state/scheduleReducer';
+import { initialState, scheduleReducer, toSchedule } from '../state/scheduleReducer';
 
 const NOW_TICK_MS = 60_000;
 
