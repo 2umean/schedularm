@@ -39,7 +39,7 @@ export function OnboardingScreen({ onDone }: Props) {
 
   return (
     <ScrollView contentContainerStyle={styles.screen}>
-      <Text style={styles.title}>Let's make sure your alarm can wake you</Text>
+      <Text style={styles.title}>Let’s make sure your alarm can wake you</Text>
       <Text style={styles.subtitle}>
         schedularm is a safety alarm. These permissions stop your phone from silently
         killing it. {health.isAggressiveOEM ? 'Your phone’s brand is known to kill alarms — the battery step is required.' : ''}
