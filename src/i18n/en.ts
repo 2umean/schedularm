@@ -1,6 +1,8 @@
+import type { DayLabel } from '../domain';
+
 /** English catalog — the FALLBACK locale. ko.ts must mirror this key set exactly. */
 export const en = {
-  day: { 'same-day': 'today', 'prev-day': 'last night', 'next-day': 'tomorrow', other: '' },
+  day: { 'same-day': 'today', 'prev-day': 'last night', 'next-day': 'tomorrow', other: '' } satisfies Record<DayLabel, string>,
   chain: {
     fallAsleep: 'Fall asleep',
     wakeUp: 'Wake up',
