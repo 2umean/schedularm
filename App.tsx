@@ -17,13 +17,14 @@ type Route = 'loading' | 'onboarding' | 'chain';
 
 export default function App() {
   const [route, setRoute] = useState<Route>('loading');
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontsError] = useFonts({
     'Pretendard-Regular': require('pretendard/dist/public/static/Pretendard-Regular.otf'),
     'Pretendard-SemiBold': require('pretendard/dist/public/static/Pretendard-SemiBold.otf'),
     'Pretendard-Bold': require('pretendard/dist/public/static/Pretendard-Bold.otf'),
     'Pretendard-ExtraBold': require('pretendard/dist/public/static/Pretendard-ExtraBold.otf'),
     'Nunito-ExtraBold': Nunito_800ExtraBold,
   });
+  const fontsReady = fontsLoaded || !!fontsError; // degrade to system fonts rather than hang on splash
 
   useEffect(() => {
     isOnboarded().then((done) => {
@@ -35,10 +36,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (fontsLoaded && route !== 'loading') SplashScreen.hideAsync().catch(() => {});
-  }, [fontsLoaded, route]);
+    if (fontsReady && route !== 'loading') SplashScreen.hideAsync().catch(() => {});
+  }, [fontsReady, route]);
 
-  if (!fontsLoaded || route === 'loading') {
+  if (!fontsReady || route === 'loading') {
     return (
       <View style={{ flex: 1, backgroundColor: colors.skyBg, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator color={colors.sky500} />
