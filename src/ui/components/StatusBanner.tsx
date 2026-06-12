@@ -1,14 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { AlarmHealth, HealthReason } from '../../alarm/alarmHealth';
-
-const REASON_TEXT: Record<HealthReason, string> = {
-  'notifications-denied': 'Notifications are off — the alarm can’t alert you',
-  'exact-alarm-denied': 'Exact alarms are blocked — your alarm may not fire on time',
-  'full-screen-denied': 'Full-screen alarms are off — it won’t show over the lock screen',
-  'overlay-denied': '“Appear on top” is off — the alarm shows as a banner, not full-screen',
-  'battery-not-whitelisted': 'Battery optimization may kill the alarm — tap to fix',
-};
+import { AlarmHealth } from '../../alarm/alarmHealth';
+import { t } from '../../i18n';
+import { colors, fonts, radii, shadows, spacing } from '../theme';
 
 type Props = {
   health: AlarmHealth;
@@ -21,11 +15,11 @@ export function StatusBanner({ health, armedSummary, onFixPress }: Props) {
 
   if (atRisk) {
     return (
-      <Pressable onPress={onFixPress} style={[styles.banner, styles.risk]}>
-        <Text style={styles.riskTitle}>⚠ Your alarm may NOT ring — tap to fix</Text>
+      <Pressable onPress={onFixPress} style={styles.risk}>
+        <Text style={styles.riskTitle}>{t('banner.atRisk')}</Text>
         {health.reasons.map((r) => (
           <Text key={r} style={styles.riskLine}>
-            • {REASON_TEXT[r]}
+            • {t(`reason.${r}`)}
           </Text>
         ))}
       </Pressable>
@@ -33,23 +27,33 @@ export function StatusBanner({ health, armedSummary, onFixPress }: Props) {
   }
 
   return (
-    <View style={[styles.banner, styles.ok]}>
-      {armedSummary ? (
-        <Text style={styles.okTitle}>
-          ✓ Armed · Wake {armedSummary.wake} · Leave {armedSummary.leave}
-        </Text>
-      ) : (
-        <Text style={styles.okTitle}>Ready — set your arrival time</Text>
-      )}
+    <View style={[styles.chip, armedSummary ? styles.armed : styles.ready]}>
+      <Text style={armedSummary ? styles.armedText : styles.readyText}>
+        {armedSummary
+          ? t('banner.armed', { wake: armedSummary.wake, leave: armedSummary.leave })
+          : t('banner.ready')}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  banner: { borderRadius: 12, padding: 16, marginBottom: 12 },
-  ok: { backgroundColor: '#13351F' },
-  okTitle: { color: '#3DDC84', fontSize: 16, fontWeight: '700' },
-  risk: { backgroundColor: '#3A1320' },
-  riskTitle: { color: '#FF7A8A', fontSize: 16, fontWeight: '700', marginBottom: 6 },
-  riskLine: { color: '#E2A8B2', fontSize: 13, lineHeight: 18 },
+  chip: {
+    borderRadius: radii.pill,
+    paddingVertical: spacing.m - 2,
+    paddingHorizontal: spacing.l,
+    marginBottom: spacing.m,
+  },
+  armed: { backgroundColor: colors.mintBg },
+  armedText: { color: colors.green, fontSize: 13, fontFamily: fonts.extra },
+  ready: { backgroundColor: colors.bubble, ...shadows.bubble },
+  readyText: { color: colors.ink2, fontSize: 13, fontFamily: fonts.bold },
+  risk: {
+    backgroundColor: colors.blushBg,
+    borderRadius: radii.bubble - 4,
+    padding: spacing.l - 2,
+    marginBottom: spacing.m,
+  },
+  riskTitle: { color: colors.red, fontSize: 13, fontFamily: fonts.extra },
+  riskLine: { color: colors.blushText, fontSize: 11, fontFamily: fonts.semi, marginTop: 3, lineHeight: 16 },
 });
