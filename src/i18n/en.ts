@@ -1,4 +1,5 @@
 import type { DayLabel } from '../domain';
+import type { HealthReason } from '../alarm/alarmHealth';
 
 /** English catalog — the FALLBACK locale. ko.ts must mirror this key set exactly. */
 export const en = {
@@ -26,7 +27,7 @@ export const en = {
     'full-screen-denied': 'Full-screen alarms are off — it won’t show over the lock screen',
     'overlay-denied': '“Appear on top” is off — the alarm shows as a banner, not full-screen',
     'battery-not-whitelisted': 'Battery optimization may kill the alarm — tap to fix',
-  },
+  } satisfies Record<HealthReason, string>,
   issue: {
     infeasible: 'This timing is impossible — a step would take negative time.',
     'past-wake': 'The wake-up time has already passed.',
