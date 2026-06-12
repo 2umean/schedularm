@@ -2,6 +2,9 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { useState } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { t } from '../../i18n';
+import { colors, fonts, radii, spacing } from '../theme';
+
 type Props = {
   visible: boolean;
   title: string;
@@ -53,13 +56,13 @@ export function TimeEditorModal({ visible, title, initial, onCancel, onConfirm }
           />
           <View style={styles.actions}>
             <Pressable onPress={onCancel} style={[styles.btn, styles.ghost]}>
-              <Text style={styles.ghostText}>Cancel</Text>
+              <Text style={styles.ghostText}>{t('editor.cancel')}</Text>
             </Pressable>
             <Pressable
               onPress={() => onConfirm(value.getHours(), value.getMinutes())}
               style={[styles.btn, styles.primary]}
             >
-              <Text style={styles.primaryText}>Set</Text>
+              <Text style={styles.primaryText}>{t('editor.set')}</Text>
             </Pressable>
           </View>
         </View>
@@ -69,13 +72,18 @@ export function TimeEditorModal({ visible, title, initial, onCancel, onConfirm }
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: '#000A', justifyContent: 'center', padding: 24 },
-  card: { backgroundColor: '#161C33', borderRadius: 16, padding: 20 },
-  title: { color: '#FFFFFF', fontSize: 18, fontWeight: '700', marginBottom: 8 },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 12 },
-  btn: { borderRadius: 10, paddingVertical: 10, paddingHorizontal: 20 },
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(31,51,73,0.35)',
+    justifyContent: 'center',
+    padding: spacing.xxl,
+  },
+  card: { backgroundColor: colors.bubble, borderRadius: radii.modal, padding: spacing.xl },
+  title: { color: colors.ink, fontSize: 16, fontFamily: fonts.extra, marginBottom: spacing.s },
+  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.m, marginTop: spacing.m },
+  btn: { borderRadius: radii.pill, paddingVertical: spacing.s + 2, paddingHorizontal: spacing.xl },
   ghost: { backgroundColor: 'transparent' },
-  ghostText: { color: '#9AA4C2', fontSize: 16 },
-  primary: { backgroundColor: '#3D6BFF' },
-  primaryText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  ghostText: { color: colors.ink2, fontSize: 14, fontFamily: fonts.bold },
+  primary: { backgroundColor: colors.sky500 },
+  primaryText: { color: colors.white, fontSize: 14, fontFamily: fonts.extra },
 });

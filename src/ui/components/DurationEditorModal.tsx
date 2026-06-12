@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { t } from '../../i18n';
 import { formatDuration } from '../format';
+import { colors, fonts, radii, spacing } from '../theme';
 
 const STEP = 5; // minutes
 
@@ -33,20 +35,20 @@ export function DurationEditorModal({
         <View style={styles.card}>
           <Text style={styles.title}>{title}</Text>
           <View style={styles.stepper}>
-            <Pressable onPress={() => adjust(-STEP)} style={styles.step}>
-              <Text style={styles.stepText}>−</Text>
+            <Pressable onPress={() => adjust(-STEP)} style={[styles.step, styles.minus]}>
+              <Text style={[styles.stepText, styles.minusText]}>−</Text>
             </Pressable>
             <Text style={styles.value}>{formatDuration(minutes)}</Text>
-            <Pressable onPress={() => adjust(STEP)} style={styles.step}>
-              <Text style={styles.stepText}>+</Text>
+            <Pressable onPress={() => adjust(STEP)} style={[styles.step, styles.plus]}>
+              <Text style={[styles.stepText, styles.plusText]}>＋</Text>
             </Pressable>
           </View>
           <View style={styles.actions}>
-            <Pressable onPress={onCancel} style={[styles.btn, styles.ghost]}>
-              <Text style={styles.ghostText}>Cancel</Text>
+            <Pressable onPress={onCancel} style={styles.ghost}>
+              <Text style={styles.ghostText}>{t('editor.cancel')}</Text>
             </Pressable>
-            <Pressable onPress={() => onConfirm(minutes)} style={[styles.btn, styles.primary]}>
-              <Text style={styles.primaryText}>Set</Text>
+            <Pressable onPress={() => onConfirm(minutes)} style={styles.primary}>
+              <Text style={styles.primaryText}>{t('editor.set')}</Text>
             </Pressable>
           </View>
         </View>
@@ -56,24 +58,42 @@ export function DurationEditorModal({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: '#000A', justifyContent: 'center', padding: 24 },
-  card: { backgroundColor: '#161C33', borderRadius: 16, padding: 20 },
-  title: { color: '#FFFFFF', fontSize: 18, fontWeight: '700', marginBottom: 16 },
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(31,51,73,0.35)',
+    justifyContent: 'center',
+    padding: spacing.xxl,
+  },
+  card: { backgroundColor: colors.bubble, borderRadius: radii.modal, padding: spacing.xl },
+  title: { color: colors.ink, fontSize: 16, fontFamily: fonts.extra, marginBottom: spacing.l },
   stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   step: {
-    backgroundColor: '#2A3A66',
-    borderRadius: 12,
-    width: 56,
-    height: 56,
+    borderRadius: radii.pill,
+    width: 52,
+    height: 52,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepText: { color: '#FFFFFF', fontSize: 28, fontWeight: '700' },
-  value: { color: '#FFFFFF', fontSize: 32, fontWeight: '800' },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 20 },
-  btn: { borderRadius: 10, paddingVertical: 10, paddingHorizontal: 20 },
-  ghost: { backgroundColor: 'transparent' },
-  ghostText: { color: '#9AA4C2', fontSize: 16 },
-  primary: { backgroundColor: '#3D6BFF' },
-  primaryText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  minus: { backgroundColor: colors.skyBgTop },
+  plus: { backgroundColor: colors.sky500 },
+  stepText: { fontSize: 26, fontFamily: fonts.extra },
+  minusText: { color: colors.sky700 },
+  plusText: { color: colors.white },
+  value: { color: colors.ink, fontSize: 28, fontFamily: fonts.clock },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: spacing.m,
+    marginTop: spacing.xl,
+    alignItems: 'center',
+  },
+  ghost: { paddingVertical: spacing.s, paddingHorizontal: spacing.s },
+  ghostText: { color: colors.ink2, fontSize: 14, fontFamily: fonts.bold },
+  primary: {
+    backgroundColor: colors.sky500,
+    borderRadius: radii.pill,
+    paddingVertical: spacing.s + 2,
+    paddingHorizontal: spacing.xl,
+  },
+  primaryText: { color: colors.white, fontSize: 14, fontFamily: fonts.extra },
 });
