@@ -1,16 +1,29 @@
+import { Nunito_800ExtraBold } from '@expo-google-fonts/nunito';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 
 import { AlarmService } from './src/alarm/AlarmService';
+import { isOnboarded, markOnboarded } from './src/storage/onboarding';
+import { colors } from './src/ui/theme';
 import { ChainScreen } from './src/ui/screens/ChainScreen';
 import { OnboardingScreen } from './src/ui/screens/OnboardingScreen';
-import { isOnboarded, markOnboarded } from './src/storage/onboarding';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 type Route = 'loading' | 'onboarding' | 'chain';
 
 export default function App() {
   const [route, setRoute] = useState<Route>('loading');
+  const [fontsLoaded] = useFonts({
+    'Pretendard-Regular': require('pretendard/dist/public/static/Pretendard-Regular.otf'),
+    'Pretendard-SemiBold': require('pretendard/dist/public/static/Pretendard-SemiBold.otf'),
+    'Pretendard-Bold': require('pretendard/dist/public/static/Pretendard-Bold.otf'),
+    'Pretendard-ExtraBold': require('pretendard/dist/public/static/Pretendard-ExtraBold.otf'),
+    'Nunito-ExtraBold': Nunito_800ExtraBold,
+  });
 
   useEffect(() => {
     isOnboarded().then((done) => {
@@ -21,11 +34,15 @@ export default function App() {
     });
   }, []);
 
-  if (route === 'loading') {
+  useEffect(() => {
+    if (fontsLoaded && route !== 'loading') SplashScreen.hideAsync().catch(() => {});
+  }, [fontsLoaded, route]);
+
+  if (!fontsLoaded || route === 'loading') {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0B1021', justifyContent: 'center' }}>
-        <ActivityIndicator color="#3D6BFF" />
-        <StatusBar style="light" />
+      <View style={{ flex: 1, backgroundColor: colors.skyBg, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator color={colors.sky500} />
+        <StatusBar style="dark" />
       </View>
     );
   }
@@ -42,7 +59,7 @@ export default function App() {
       ) : (
         <ChainScreen />
       )}
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
     </>
   );
 }
