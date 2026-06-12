@@ -6,4 +6,7 @@ module.exports = {
   transform: {
     '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }],
   },
+  moduleNameMapper: {
+    '^expo-localization$': '<rootDir>/test/stubs/expo-localization.js',
+  },
 };

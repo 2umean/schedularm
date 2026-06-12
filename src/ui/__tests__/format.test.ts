@@ -24,3 +24,17 @@ test('pickedTimeToInstant maps an HH:mm onto the same calendar day as a base ins
   const out = pickedTimeToInstant(base, 4, 15, 'UTC');
   expect(DateTime.fromMillis(out, { zone: 'UTC' }).toFormat('yyyy-MM-dd HH:mm')).toBe('2026-01-06 04:15');
 });
+
+test('day labels localize to Korean when the locale is ko', () => {
+  const { i18n } = require('../../i18n');
+  const prev = i18n.locale;
+  i18n.locale = 'ko';
+  try {
+    const ref = at(6, 6, 0);
+    expect(formatClockWithDay(at(6, 3, 45), ref, 'UTC').day).toBe('오늘');
+    expect(formatClockWithDay(at(5, 19, 45), ref, 'UTC').day).toBe('어젯밤');
+    expect(formatClockWithDay(at(7, 3, 0), ref, 'UTC').day).toBe('내일');
+  } finally {
+    i18n.locale = prev;
+  }
+});
