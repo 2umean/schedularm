@@ -28,9 +28,9 @@ public class SchedularmAlarmModule: Module {
       let fireDate = Date(timeIntervalSince1970: epochMs / 1000.0)
 
       let alert = AlarmPresentation.Alert(
-        title: LocalizedStringResource("ring_greeting"),
+        title: LocalizedStringResource("ring_greeting", table: "SchedularmAlarm"),
         stopButton: AlarmButton(
-          text: LocalizedStringResource("ring_dismiss"),
+          text: LocalizedStringResource("ring_dismiss", table: "SchedularmAlarm"),
           textColor: .white,
           systemImageName: "alarm.fill"
         )

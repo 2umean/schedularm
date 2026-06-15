@@ -2,7 +2,7 @@ Pod::Spec.new do |s|
   s.name           = 'SchedularmAlarm'
   s.version        = '0.1.0'
   s.summary        = 'Bespoke reverse-alarm native module for schedularm'
-  s.description    = 'Android-first reverse-alarm native module. iOS is stubbed for the M0 spike.'
+  s.description    = 'Reverse-alarm native module: Android (AlarmManager + full-screen Activity) and iOS (AlarmKit).'
   s.author         = ''
   s.homepage       = 'https://github.com/umean/schedularm'
   s.platforms      = {
