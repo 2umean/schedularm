@@ -52,6 +52,7 @@ export const en = {
     fullScreen: { title: 'Show over the lock screen', desc: 'So the alarm takes over the screen, not just a banner.' },
     overlay: { title: 'Appear on top', desc: 'Forces full-screen on phones that suppress it.' },
     battery: { title: 'Disable battery optimization', desc: 'Otherwise your phone kills the alarm in the background.' },
+    alarmAuth: { title: 'Allow alarms', desc: 'schedularm needs permission to set alarms that wake you through silent mode and Focus.' },
   },
   alerts: {
     fallAsleep: { title: '🌙 Time to fall asleep', body: 'Sleep now to be rested for your {{wake}} wake-up.' },

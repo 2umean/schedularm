@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AlarmService } from '../../alarm/AlarmService';
 import { AlarmHealth } from '../../alarm/alarmHealth';
@@ -51,6 +51,7 @@ export function OnboardingScreen({ onDone }: Props) {
   const refresh = () => setHealth(AlarmService.getHealth());
 
   const has = (r: AlarmHealth['reasons'][number]) => !health.reasons.includes(r);
+  const isIos = Platform.OS === 'ios';
 
   return (
     <ScrollView style={styles.screenWrap} contentContainerStyle={styles.screen}>
@@ -61,46 +62,60 @@ export function OnboardingScreen({ onDone }: Props) {
         {health.isAggressiveOEM ? ` ${t('onboarding.oemWarning')}` : ''}
       </Text>
 
-      <Step
-        title={t('onboarding.notif.title')}
-        desc={t('onboarding.notif.desc')}
-        done={has('notifications-denied') && has('exact-alarm-denied')}
-        onFix={async () => {
-          await AlarmService.requestCritical();
-          refresh();
-        }}
-      />
-      <Step
-        title={t('onboarding.fullScreen.title')}
-        desc={t('onboarding.fullScreen.desc')}
-        done={has('full-screen-denied')}
-        onFix={async () => {
-          await AlarmService.requestCritical();
-          refresh();
-        }}
-      />
-      <Step
-        title={t('onboarding.overlay.title')}
-        desc={t('onboarding.overlay.desc')}
-        done={has('overlay-denied')}
-        onFix={async () => {
-          await AlarmService.requestOverlay();
-          refresh();
-        }}
-      />
-      {health.isAggressiveOEM ? (
+      {isIos ? (
         <Step
-          title={t('onboarding.battery.title')}
-          desc={t('onboarding.battery.desc')}
-          done={has('battery-not-whitelisted')}
-          accent="amber"
-          required
+          title={t('onboarding.alarmAuth.title')}
+          desc={t('onboarding.alarmAuth.desc')}
+          done={has('alarm-auth-denied')}
           onFix={async () => {
-            await AlarmService.requestBattery();
+            await AlarmService.requestCritical();
             refresh();
           }}
         />
-      ) : null}
+      ) : (
+        <>
+          <Step
+            title={t('onboarding.notif.title')}
+            desc={t('onboarding.notif.desc')}
+            done={has('notifications-denied') && has('exact-alarm-denied')}
+            onFix={async () => {
+              await AlarmService.requestCritical();
+              refresh();
+            }}
+          />
+          <Step
+            title={t('onboarding.fullScreen.title')}
+            desc={t('onboarding.fullScreen.desc')}
+            done={has('full-screen-denied')}
+            onFix={async () => {
+              await AlarmService.requestCritical();
+              refresh();
+            }}
+          />
+          <Step
+            title={t('onboarding.overlay.title')}
+            desc={t('onboarding.overlay.desc')}
+            done={has('overlay-denied')}
+            onFix={async () => {
+              await AlarmService.requestOverlay();
+              refresh();
+            }}
+          />
+          {health.isAggressiveOEM ? (
+            <Step
+              title={t('onboarding.battery.title')}
+              desc={t('onboarding.battery.desc')}
+              done={has('battery-not-whitelisted')}
+              accent="amber"
+              required
+              onFix={async () => {
+                await AlarmService.requestBattery();
+                refresh();
+              }}
+            />
+          ) : null}
+        </>
+      )}
 
       <Pressable
         onPress={onDone}

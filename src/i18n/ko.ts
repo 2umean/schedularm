@@ -51,6 +51,7 @@ export const ko: typeof en = {
     fullScreen: { title: '잠금 화면 위에 표시', desc: '배너가 아니라 화면 전체를 깨워요.' },
     overlay: { title: '다른 앱 위에 표시', desc: '전체 화면을 막는 휴대폰에서 강제로 띄우는 보조 장치예요.' },
     battery: { title: '배터리 최적화 해제', desc: '해제하지 않으면 백그라운드에서 알람이 종료돼요.' },
+    alarmAuth: { title: '알람 허용', desc: '무음·집중 모드에서도 깨울 수 있도록 알람 권한이 필요해요.' },
   },
   alerts: {
     fallAsleep: { title: '🌙 잠들 시간이에요', body: '{{wake}} 기상을 위해 지금 주무세요.' },
