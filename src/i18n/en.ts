@@ -1,4 +1,4 @@
-import type { DayLabel } from '../domain';
+import type { DayLabel, ValidationIssue } from '../domain';
 import type { HealthReason } from '../alarm/alarmHealth';
 
 /** English catalog — the FALLBACK locale. ko.ts must mirror this key set exactly. */
@@ -34,7 +34,7 @@ export const en = {
     'sleep-debt': 'Heads up: not much time left to sleep.',
     'chain-too-long': 'The total span is unrealistically long.',
     'out-of-range': 'The {{field}} duration is out of range.',
-  },
+  } satisfies Record<ValidationIssue['kind'], string>,
   duration: { contingency: 'contingency', travel: 'travel', prep: 'prep', sleep: 'sleep' },
   timeField: { arrival: 'arrival', wake: 'wake-up', leaveHome: 'leave-home', fallAsleep: 'fall-asleep' },
   editor: { setTime: 'Set {{field}} time', cancel: 'Cancel', set: 'Set' },
