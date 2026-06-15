@@ -26,8 +26,8 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.line,
     borderRadius: radii.pill,
-    paddingVertical: 6,
-    paddingHorizontal: 16,
+    paddingVertical: 9,
+    paddingHorizontal: 20,
   },
-  text: { color: colors.ink2, fontSize: 14, fontFamily: fonts.bold },
+  text: { color: colors.ink2, fontSize: 16, fontFamily: fonts.bold },
 });
