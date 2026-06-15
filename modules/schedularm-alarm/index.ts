@@ -56,6 +56,13 @@ export function getManufacturer(): string {
   return SchedularmAlarm.getManufacturer();
 }
 
+/** AlarmKit authorization state (iOS only; never called on Android). */
+export type AuthorizationState = 'authorized' | 'denied' | 'notDetermined';
+
+export function getAuthorizationState(): AuthorizationState {
+  return SchedularmAlarm.getAuthorizationState();
+}
+
 /** Whether the app can draw over other apps ("Appear on top" / "Display over other apps"). */
 export function canDrawOverlays(): boolean {
   return SchedularmAlarm.canDrawOverlays();

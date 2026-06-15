@@ -2,57 +2,72 @@ import { Platform } from 'react-native';
 
 import * as native from '../../modules/schedularm-alarm';
 import { Schedule, reverseCalc } from '../domain';
-import { AlarmHealth, deriveHealth } from './alarmHealth';
+import { AlarmHealth, deriveHealth, deriveIosHealth } from './alarmHealth';
 import { cancelChainAlerts, scheduleChainAlerts } from './chainAlerts';
 
 const isAndroid = Platform.OS === 'android';
+const isIos = Platform.OS === 'ios';
+
+/** Best-effort: ensure local-notification permission so the companion
+ * fall-asleep/leave-home alerts can fire on iOS. Never blocks the AlarmKit
+ * wake alarm; failures are swallowed. */
+function ensureIosNotificationPermission(): void {
+  void (async () => {
+    try {
+      const Notifications = await import('expo-notifications');
+      await Notifications.requestPermissionsAsync();
+    } catch {
+      // expo-notifications unavailable — companion alerts simply won't fire.
+    }
+  })();
+}
 
 /**
  * The safety-critical seam. UI and hooks talk ONLY to this object, never to the
- * native module directly. iOS AlarmKit is deferred (a later plan) — on iOS, arming
- * is a no-op and health reports unreliable so the UI can label it best-effort.
+ * native module directly. Android: bespoke Kotlin (AlarmManager.setAlarmClock +
+ * full-screen Activity). iOS: AlarmKit (OS-guaranteed ring through silent/Focus).
  */
 export const AlarmService = {
-  isSupported: isAndroid,
+  isSupported: isAndroid || isIos,
 
   /** Arm the wake-up alarm for a schedule (fires at its derived wake instant). */
   arm(schedule: Schedule): void {
-    if (!isAndroid) return;
+    if (!isAndroid && !isIos) return;
     const d = reverseCalc(schedule);
     native.scheduleAlarm(d.wake, d.leaveHome);
-    // Companion fall-asleep/leave-home push alerts — best-effort, never
-    // allowed to affect the alarm itself (fire-and-forget, errors swallowed).
+    // Companion fall-asleep/leave-home push alerts — best-effort, never allowed
+    // to affect the alarm itself (fire-and-forget, errors swallowed).
+    if (isIos) ensureIosNotificationPermission();
     void scheduleChainAlerts(schedule);
   },
 
-  /** Cancel any ringing + scheduled alarm (also clears native boot re-arm). */
+  /** Cancel any ringing + scheduled alarm (also clears native boot re-arm on Android). */
   dismiss(): void {
-    if (!isAndroid) return;
+    if (!isAndroid && !isIos) return;
     native.dismiss();
     void cancelChainAlerts();
   },
 
-  /** Current health snapshot (permissions + OEM). */
+  /** Current health snapshot. */
   getHealth(): AlarmHealth {
-    if (!isAndroid) {
-      return { reasons: [], isArmReliable: false, isAggressiveOEM: false };
-    }
-    return deriveHealth(native.getPermissionsStatus(), native.getManufacturer());
+    if (isIos) return deriveIosHealth(native.getAuthorizationState());
+    if (isAndroid) return deriveHealth(native.getPermissionsStatus(), native.getManufacturer());
+    return { reasons: [], isArmReliable: false, isAggressiveOEM: false };
   },
 
-  /** Route the user to fix the most critical silent-fail gate (notif/exact/FSI). */
+  /** Route the user to grant the critical permission (Android gates / iOS AlarmKit auth). */
   async requestCritical(): Promise<void> {
-    if (!isAndroid) return;
+    if (!isAndroid && !isIos) return;
     await native.requestPermissions();
   },
 
-  /** Open "Appear on top" settings (overlay → full-screen-over-lock fallback). */
+  /** Android only: "Appear on top" settings (overlay → full-screen-over-lock fallback). */
   async requestOverlay(): Promise<void> {
     if (!isAndroid) return;
     await native.requestOverlayPermission();
   },
 
-  /** Show the battery-optimization-exemption dialog (aggressive-OEM onboarding). */
+  /** Android only: battery-optimization-exemption dialog (aggressive-OEM onboarding). */
   async requestBattery(): Promise<void> {
     if (!isAndroid) return;
     await native.requestDisableBatteryOptimization();
