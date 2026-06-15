@@ -76,3 +76,16 @@ https://expo.dev/artifacts/eas/ZwZ5lUZTe0EK4q13687mPQ78PG_HZ-ihUWe6AaE1pOg.apk
 6. App-kill survival, silent+DND ring, Doze (`adb shell dumpsys deviceidle force-idle`).
 
 **Then:** report PASS/FAIL per item → record final acceptance here → commit → decide on pushing the ~35 local commits.
+
+---
+
+## Plan 3 Soft Sky acceptance (2026-06-15, S24+)
+
+Dev-client build `5aac0bf6` (APK: https://expo.dev/artifacts/eas/7HwLBtW8jOMOAU6ZpiwdB_Sz04fQGzO4wROPa3DZ16A.apk), JS over Metro.
+
+**Reported by user:**
+- **KO/EN locale — PASS.** Korean primary and English fallback both render correctly.
+- **Soft Sky visual design — PASS** overall.
+- **Duration pills (sleep/shower/travel/contingency) — adjusted.** Initial size read too small on-device; enlarged in two passes per feedback (padding 3/12→9/20, font 12→16) — final size approved. Commits `62d2ccd`, `3697df7`.
+
+**Not separately exercised in this acceptance pass** (no PASS/FAIL reported — revisit if desired): native ring screen + 출발까지 leave-home chip, fall-asleep/leave-home push alerts, launcher icon + splash rendering, predictive-back on the ring screen (Android 14+).
