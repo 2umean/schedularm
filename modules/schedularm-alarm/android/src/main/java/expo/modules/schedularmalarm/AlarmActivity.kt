@@ -3,18 +3,24 @@ package expo.modules.schedularmalarm
 import android.app.Activity
 import android.app.KeyguardManager
 import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.ViewGroup
 import android.view.WindowManager
-import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
- * Full-screen, must-dismiss alarm UI shown over the lock screen.
- * Layout is built in code so the module needs no bundled drawable/layout assets.
+ * Full-screen, must-dismiss alarm UI shown over the lock screen ("Soft Sky":
+ * night-to-sunrise gradient — spec 2026-06-12-soft-sky-visual-design §2.4).
+ * Layout is built in code so the module needs no bundled drawable/layout assets;
+ * strings come from res/values{,-ko}/strings.xml so the OS localizes them.
  */
 class AlarmActivity : Activity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,36 +48,95 @@ class AlarmActivity : Activity() {
 
   private fun buildView(): LinearLayout {
     val match = ViewGroup.LayoutParams.MATCH_PARENT
-    val wrap = ViewGroup.LayoutParams.WRAP_CONTENT
+    val clockFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
 
     val root = LinearLayout(this).apply {
       orientation = LinearLayout.VERTICAL
-      gravity = Gravity.CENTER
-      setBackgroundColor(Color.parseColor("#0B1021"))
+      gravity = Gravity.CENTER_HORIZONTAL
       layoutParams = ViewGroup.LayoutParams(match, match)
-      setPadding(64, 64, 64, 64)
+      setPadding(48, 160, 48, 64)
+      background = GradientDrawable(
+        GradientDrawable.Orientation.TL_BR,
+        intArrayOf(0xFF2C7BD4.toInt(), 0xFF4FA8FF.toInt(), 0xFFFFB84C.toInt())
+      )
     }
-    val title = TextView(this).apply {
-      text = "schedularm"
-      textSize = 36f
-      setTextColor(Color.WHITE)
+
+    val sun = TextView(this).apply {
+      text = "☀️"
+      textSize = 34f
       gravity = Gravity.CENTER
+    }
+    val greeting = TextView(this).apply {
+      text = getString(R.string.ring_greeting)
+      textSize = 22f
+      setTextColor(Color.WHITE)
+      typeface = Typeface.DEFAULT_BOLD
+      gravity = Gravity.CENTER
+      setPadding(0, 12, 0, 0)
     }
     val subtitle = TextView(this).apply {
-      text = "Time to go."
-      textSize = 18f
-      setTextColor(Color.parseColor("#9AA4C2"))
+      text = getString(R.string.ring_subtitle)
+      textSize = 14f
+      setTextColor(Color.parseColor("#EAF4FF"))
       gravity = Gravity.CENTER
-      setPadding(0, 16, 0, 64)
+      setPadding(0, 4, 0, 0)
     }
-    val dismiss = Button(this).apply {
-      text = "Dismiss"
-      setOnClickListener { dismissAlarm() }
-      layoutParams = LinearLayout.LayoutParams(wrap, wrap)
+    val clock = TextView(this).apply {
+      text = clockFmt.format(Date())
+      textSize = 64f
+      setTextColor(Color.WHITE)
+      typeface = Typeface.DEFAULT_BOLD
+      gravity = Gravity.CENTER
+      setPadding(0, 24, 0, 0)
     }
-    root.addView(title)
+
+    root.addView(sun)
+    root.addView(greeting)
     root.addView(subtitle)
-    root.addView(dismiss)
+    root.addView(clock)
+
+    // Leave-home countdown chip — only when a future leave instant is known.
+    val leaveAt = AlarmController.persistedLeaveAt(applicationContext)
+    val now = System.currentTimeMillis()
+    if (leaveAt > now) {
+      val minutesLeft = ((leaveAt - now) / 60000L).toInt()
+      val chip = TextView(this).apply {
+        text = getString(R.string.ring_leave_chip, clockFmt.format(Date(leaveAt)), minutesLeft)
+        textSize = 13f
+        setTextColor(Color.WHITE)
+        typeface = Typeface.DEFAULT_BOLD
+        gravity = Gravity.CENTER
+        setPadding(40, 14, 40, 14)
+        background = GradientDrawable().apply {
+          cornerRadius = 999f
+          setColor(0x2EFFFFFF)
+        }
+      }
+      val chipParams = LinearLayout.LayoutParams(
+        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+      ).apply { topMargin = 28 }
+      root.addView(chip, chipParams)
+    }
+
+    // Spacer pushes the dismiss pill to the bottom.
+    val spacer = android.view.View(this)
+    root.addView(spacer, LinearLayout.LayoutParams(0, 0, 1f))
+
+    val dismiss = TextView(this).apply {
+      text = getString(R.string.ring_dismiss)
+      textSize = 17f
+      setTextColor(Color.parseColor("#2C7BD4"))
+      typeface = Typeface.DEFAULT_BOLD
+      gravity = Gravity.CENTER
+      setPadding(0, 44, 0, 44)
+      background = GradientDrawable().apply {
+        cornerRadius = 999f
+        setColor(Color.WHITE)
+      }
+      setOnClickListener { dismissAlarm() }
+    }
+    root.addView(dismiss, LinearLayout.LayoutParams(match, ViewGroup.LayoutParams.WRAP_CONTENT))
+
     return root
   }
 
