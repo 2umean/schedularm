@@ -13,9 +13,9 @@ import android.os.Build
  */
 object AlarmController {
 
-  /** Arm the exact, Doze-exempt alarm and persist it for boot re-arm. */
-  fun scheduleAlarm(context: Context, epochMs: Long) {
-    persist(context, epochMs)
+  /** Arm the exact, Doze-exempt alarm and persist it (with the leave-home instant) for boot re-arm. */
+  fun scheduleAlarm(context: Context, epochMs: Long, leaveEpochMs: Long) {
+    persist(context, epochMs, leaveEpochMs)
     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     val info = AlarmManager.AlarmClockInfo(epochMs, showPendingIntent(context))
     // setAlarmClock is the only API that is BOTH exact AND Doze-exempt.
@@ -43,11 +43,21 @@ object AlarmController {
   fun persistedAlarmAt(context: Context): Long =
     prefs(context).getLong(AlarmConstants.KEY_ALARM_AT, 0L)
 
-  private fun persist(context: Context, epochMs: Long) =
-    prefs(context).edit().putLong(AlarmConstants.KEY_ALARM_AT, epochMs).apply()
+  /** Leave-home instant for the ring screen's countdown chip (0 = unknown). */
+  fun persistedLeaveAt(context: Context): Long =
+    prefs(context).getLong(AlarmConstants.KEY_LEAVE_AT, 0L)
+
+  private fun persist(context: Context, epochMs: Long, leaveEpochMs: Long) =
+    prefs(context).edit()
+      .putLong(AlarmConstants.KEY_ALARM_AT, epochMs)
+      .putLong(AlarmConstants.KEY_LEAVE_AT, leaveEpochMs)
+      .apply()
 
   private fun clear(context: Context) =
-    prefs(context).edit().remove(AlarmConstants.KEY_ALARM_AT).apply()
+    prefs(context).edit()
+      .remove(AlarmConstants.KEY_ALARM_AT)
+      .remove(AlarmConstants.KEY_LEAVE_AT)
+      .apply()
 
   private fun prefs(context: Context): SharedPreferences {
     // Device-protected storage is readable during direct boot (LOCKED_BOOT_COMPLETED).

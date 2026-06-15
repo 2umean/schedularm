@@ -26,7 +26,7 @@ class BootReceiver : BroadcastReceiver() {
     // Only re-arm an alarm still in the future; past-due is handled by the app
     // layer as a "missed alarm" warning.
     if (epochMs > 0L && epochMs > now) {
-      AlarmController.scheduleAlarm(context, epochMs)
+      AlarmController.scheduleAlarm(context, epochMs, AlarmController.persistedLeaveAt(context))
       Log.i(AlarmConstants.TAG, "BootReceiver.reArm: re-armed for $epochMs")
     } else {
       Log.i(AlarmConstants.TAG, "BootReceiver.reArm: nothing to re-arm (no alarm or past-due)")

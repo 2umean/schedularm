@@ -10,9 +10,10 @@ const SchedularmAlarm = requireNativeModule('SchedularmAlarm');
 /**
  * Arm the single active alarm to fire at an absolute instant (epoch ms).
  * Persists for boot re-arm and uses AlarmManager.setAlarmClock (exact + Doze-exempt).
+ * `leaveEpochMs` rides along so the ring screen can show the leave-home countdown.
  */
-export function scheduleAlarm(epochMs: number): void {
-  SchedularmAlarm.scheduleAlarm(epochMs);
+export function scheduleAlarm(epochMs: number, leaveEpochMs: number): void {
+  SchedularmAlarm.scheduleAlarm(epochMs, leaveEpochMs);
 }
 
 /** Stop a ringing alarm AND cancel the scheduled one (clears boot re-arm). */

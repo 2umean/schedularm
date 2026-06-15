@@ -24,8 +24,8 @@ class SchedularmAlarmModule : Module() {
     Name("SchedularmAlarm")
 
     // JS numbers arrive as Double; epoch ms exceeds Int range, so use Double → Long.
-    Function("scheduleAlarm") { epochMs: Double ->
-      AlarmController.scheduleAlarm(context, epochMs.toLong())
+    Function("scheduleAlarm") { epochMs: Double, leaveEpochMs: Double ->
+      AlarmController.scheduleAlarm(context, epochMs.toLong(), leaveEpochMs.toLong())
     }
 
     Function("dismiss") {

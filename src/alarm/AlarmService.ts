@@ -18,7 +18,8 @@ export const AlarmService = {
   /** Arm the wake-up alarm for a schedule (fires at its derived wake instant). */
   arm(schedule: Schedule): void {
     if (!isAndroid) return;
-    native.scheduleAlarm(reverseCalc(schedule).wake);
+    const d = reverseCalc(schedule);
+    native.scheduleAlarm(d.wake, d.leaveHome);
     // Companion fall-asleep/leave-home push alerts — best-effort, never
     // allowed to affect the alarm itself (fire-and-forget, errors swallowed).
     void scheduleChainAlerts(schedule);

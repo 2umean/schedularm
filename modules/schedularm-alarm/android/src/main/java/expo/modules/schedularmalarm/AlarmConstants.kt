@@ -11,6 +11,7 @@ object AlarmConstants {
   // Persistence (device-protected storage so boot re-arm works pre-unlock).
   const val PREFS_NAME = "schedularm_alarm_prefs"
   const val KEY_ALARM_AT = "alarm_at_epoch_ms"
+  const val KEY_LEAVE_AT = "leave_at_epoch_ms"
 
   // Notification channel + id.
   const val CHANNEL_ID = "schedularm_alarm_channel"
