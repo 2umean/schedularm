@@ -1,10 +1,50 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, Pressable, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AlarmService } from '../../alarm/AlarmService';
 import { AlarmHealth } from '../../alarm/alarmHealth';
+import { t } from '../../i18n';
+import { colors, fonts, radii, shadows, spacing } from '../theme';
 
 type Props = { onDone: () => void };
+
+type StepProps = {
+  title: string;
+  desc: string;
+  done: boolean;
+  /** 'amber' marks the OEM-required battery step; others use sky. */
+  accent?: 'sky' | 'amber';
+  required?: boolean;
+  onFix: () => void;
+};
+
+function Step({ title, desc, done, accent = 'sky', required = false, onFix }: StepProps) {
+  if (done) {
+    return (
+      <View style={[styles.step, styles.stepDone]}>
+        <Text style={styles.stepDoneTitle}>✓ {title}</Text>
+      </View>
+    );
+  }
+  return (
+    <View style={[styles.step, accent === 'amber' ? styles.stepAmber : styles.stepSky]}>
+      <View style={styles.stepTitleRow}>
+        <Text style={styles.stepTitle}>○ {title}</Text>
+        {required ? (
+          <View style={styles.requiredChip}>
+            <Text style={styles.requiredText}>{t('onboarding.required')}</Text>
+          </View>
+        ) : null}
+      </View>
+      <Text style={styles.stepDesc}>{desc}</Text>
+      <Pressable onPress={onFix} style={[styles.fix, accent === 'amber' && styles.fixAmber]}>
+        <Text style={[styles.fixText, accent === 'amber' && styles.fixTextAmber]}>
+          {t('onboarding.enable')}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
 
 export function OnboardingScreen({ onDone }: Props) {
   const [health, setHealth] = useState<AlarmHealth>(() => AlarmService.getHealth());
@@ -12,42 +52,18 @@ export function OnboardingScreen({ onDone }: Props) {
 
   const has = (r: AlarmHealth['reasons'][number]) => !health.reasons.includes(r);
 
-  const Step = ({
-    title,
-    desc,
-    done,
-    onFix,
-  }: {
-    title: string;
-    desc: string;
-    done: boolean;
-    onFix: () => void;
-  }) => (
-    <View style={styles.step}>
-      <Text style={styles.stepTitle}>
-        {done ? '✓ ' : '○ '}
-        {title}
-      </Text>
-      <Text style={styles.stepDesc}>{desc}</Text>
-      {!done ? (
-        <Pressable onPress={onFix} style={styles.fix}>
-          <Text style={styles.fixText}>Enable</Text>
-        </Pressable>
-      ) : null}
-    </View>
-  );
-
   return (
-    <ScrollView contentContainerStyle={styles.screen}>
-      <Text style={styles.title}>Let’s make sure your alarm can wake you</Text>
+    <ScrollView style={styles.screenWrap} contentContainerStyle={styles.screen}>
+      <Text style={styles.hero}>🛫</Text>
+      <Text style={styles.title}>{t('onboarding.title')}</Text>
       <Text style={styles.subtitle}>
-        schedularm is a safety alarm. These permissions stop your phone from silently
-        killing it. {health.isAggressiveOEM ? 'Your phone’s brand is known to kill alarms — the battery step is required.' : ''}
+        {t('onboarding.subtitle')}
+        {health.isAggressiveOEM ? ` ${t('onboarding.oemWarning')}` : ''}
       </Text>
 
       <Step
-        title="Notifications & exact alarms"
-        desc="So the alarm can fire on time and show up."
+        title={t('onboarding.notif.title')}
+        desc={t('onboarding.notif.desc')}
         done={has('notifications-denied') && has('exact-alarm-denied')}
         onFix={async () => {
           await AlarmService.requestCritical();
@@ -55,8 +71,8 @@ export function OnboardingScreen({ onDone }: Props) {
         }}
       />
       <Step
-        title="Show over the lock screen"
-        desc="So the alarm takes over the screen, not just a banner."
+        title={t('onboarding.fullScreen.title')}
+        desc={t('onboarding.fullScreen.desc')}
         done={has('full-screen-denied')}
         onFix={async () => {
           await AlarmService.requestCritical();
@@ -64,8 +80,8 @@ export function OnboardingScreen({ onDone }: Props) {
         }}
       />
       <Step
-        title="Appear on top"
-        desc="The fallback that forces full-screen on phones that suppress it."
+        title={t('onboarding.overlay.title')}
+        desc={t('onboarding.overlay.desc')}
         done={has('overlay-denied')}
         onFix={async () => {
           await AlarmService.requestOverlay();
@@ -74,9 +90,11 @@ export function OnboardingScreen({ onDone }: Props) {
       />
       {health.isAggressiveOEM ? (
         <Step
-          title="Disable battery optimization"
-          desc="Required on your phone — otherwise the alarm gets killed in the background."
+          title={t('onboarding.battery.title')}
+          desc={t('onboarding.battery.desc')}
           done={has('battery-not-whitelisted')}
+          accent="amber"
+          required
           onFix={async () => {
             await AlarmService.requestBattery();
             refresh();
@@ -89,29 +107,75 @@ export function OnboardingScreen({ onDone }: Props) {
         disabled={!health.isArmReliable}
         style={[styles.continue, health.isArmReliable ? styles.continueOn : styles.continueOff]}
       >
-        <Text style={styles.continueText}>
-          {health.isArmReliable ? 'Continue' : 'Finish the required steps'}
+        <Text
+          style={[
+            styles.continueText,
+            health.isArmReliable ? styles.continueTextOn : styles.continueTextOff,
+          ]}
+        >
+          {health.isArmReliable ? t('onboarding.continueReady') : t('onboarding.continueBlocked')}
         </Text>
       </Pressable>
       <Pressable onPress={refresh}>
-        <Text style={styles.recheck}>Re-check</Text>
+        <Text style={styles.recheck}>{t('onboarding.recheck')}</Text>
       </Pressable>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { backgroundColor: '#0B1021', padding: 24, paddingTop: 72, gap: 12 },
-  title: { color: '#FFFFFF', fontSize: 24, fontWeight: '800' },
-  subtitle: { color: '#9AA4C2', fontSize: 15, lineHeight: 21, marginBottom: 8 },
-  step: { backgroundColor: '#161C33', borderRadius: 14, padding: 16, gap: 6 },
-  stepTitle: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
-  stepDesc: { color: '#9AA4C2', fontSize: 14, lineHeight: 19 },
-  fix: { alignSelf: 'flex-start', backgroundColor: '#3D6BFF', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 18, marginTop: 6 },
-  fixText: { color: '#FFFFFF', fontWeight: '700' },
-  continue: { borderRadius: 14, paddingVertical: 18, alignItems: 'center', marginTop: 16 },
-  continueOn: { backgroundColor: '#3DDC84' },
-  continueOff: { backgroundColor: '#27314F' },
-  continueText: { color: '#0B1021', fontSize: 18, fontWeight: '800' },
-  recheck: { color: '#7E8AB0', textAlign: 'center', padding: 12 },
+  screenWrap: { flex: 1, backgroundColor: colors.skyBg },
+  screen: { padding: spacing.xxl, paddingTop: 64, gap: spacing.s },
+  hero: { fontSize: 34 },
+  title: { color: colors.ink, fontSize: 21, fontFamily: fonts.extra, lineHeight: 28 },
+  subtitle: {
+    color: colors.ink2,
+    fontSize: 12,
+    fontFamily: fonts.semi,
+    lineHeight: 18,
+    marginBottom: spacing.s,
+  },
+  step: {
+    backgroundColor: colors.bubble,
+    borderRadius: radii.bubble - 2,
+    padding: spacing.l - 2,
+    ...shadows.bubble,
+  },
+  stepDone: { paddingVertical: spacing.m - 2 },
+  stepDoneTitle: { color: colors.green, fontSize: 13, fontFamily: fonts.extra },
+  stepSky: { borderWidth: 2, borderColor: colors.sky500 },
+  stepAmber: { borderWidth: 2, borderColor: colors.amber },
+  stepTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.s },
+  stepTitle: { color: colors.ink, fontSize: 14, fontFamily: fonts.extra },
+  requiredChip: {
+    backgroundColor: colors.warnBg,
+    borderRadius: radii.pill,
+    paddingVertical: 1,
+    paddingHorizontal: 7,
+  },
+  requiredText: { color: colors.warnText, fontSize: 9, fontFamily: fonts.extra },
+  stepDesc: { color: colors.ink2, fontSize: 12, fontFamily: fonts.semi, lineHeight: 17, marginTop: 3 },
+  fix: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.sky500,
+    borderRadius: radii.pill,
+    paddingVertical: spacing.s - 1,
+    paddingHorizontal: spacing.xl - 2,
+    marginTop: spacing.s + 1,
+  },
+  fixAmber: { backgroundColor: colors.amber },
+  fixText: { color: colors.white, fontSize: 12, fontFamily: fonts.extra },
+  fixTextAmber: { color: colors.ink },
+  continue: {
+    borderRadius: radii.pill,
+    paddingVertical: spacing.l + 1,
+    alignItems: 'center',
+    marginTop: spacing.l,
+  },
+  continueOn: { backgroundColor: colors.sky500, ...shadows.button },
+  continueOff: { backgroundColor: colors.disabledBg },
+  continueText: { fontSize: 15, fontFamily: fonts.extra },
+  continueTextOn: { color: colors.white },
+  continueTextOff: { color: colors.disabledText },
+  recheck: { color: colors.sky500, textAlign: 'center', padding: spacing.m, fontSize: 12, fontFamily: fonts.bold },
 });
