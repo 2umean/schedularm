@@ -27,6 +27,7 @@ export const en = {
     'full-screen-denied': 'Full-screen alarms are off — it won’t show over the lock screen',
     'overlay-denied': '“Appear on top” is off — the alarm shows as a banner, not full-screen',
     'battery-not-whitelisted': 'Battery optimization may kill the alarm — tap to fix',
+    'alarm-auth-denied': 'Alarm permission is off — turn it on so the alarm can wake you',
   } satisfies Record<HealthReason, string>,
   issue: {
     infeasible: 'This timing is impossible — a step would take negative time.',

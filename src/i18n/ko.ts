@@ -26,6 +26,7 @@ export const ko: typeof en = {
     'full-screen-denied': '전체 화면 알람이 꺼져 있어요 — 잠금 화면 위에 표시되지 않아요',
     'overlay-denied': '‘다른 앱 위에 표시’가 꺼져 있어요 — 전체 화면 대신 배너로만 표시돼요',
     'battery-not-whitelisted': '배터리 최적화가 알람을 종료시킬 수 있어요 — 눌러서 해결',
+    'alarm-auth-denied': '알람 권한이 꺼져 있어요 — 알람이 깨울 수 있도록 허용해 주세요',
   },
   issue: {
     infeasible: '불가능한 일정이에요 — 음수 시간이 생겨요.',

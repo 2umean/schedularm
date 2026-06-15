@@ -12,7 +12,8 @@ export type HealthReason =
   | 'exact-alarm-denied'
   | 'full-screen-denied'
   | 'overlay-denied'
-  | 'battery-not-whitelisted';
+  | 'battery-not-whitelisted'
+  | 'alarm-auth-denied';
 
 export type AlarmHealth = {
   /** Ordered list of everything currently at risk (for banner + onboarding). */
@@ -56,4 +57,22 @@ export function deriveHealth(
   const isArmReliable = !reasons.some((r) => CRITICAL.includes(r));
 
   return { reasons, isArmReliable, isAggressiveOEM };
+}
+
+/** AlarmKit authorization state, surfaced by the iOS native module. */
+export type IosAuthorizationState = 'authorized' | 'denied' | 'notDetermined';
+
+/**
+ * Map AlarmKit authorization onto the shared health model. iOS has no
+ * Android-style gates (exact-alarm/full-screen/overlay/battery/OEM) — once
+ * AlarmKit is authorized the OS guarantees the ring, so the only risk is
+ * missing authorization.
+ */
+export function deriveIosHealth(state: IosAuthorizationState): AlarmHealth {
+  const authorized = state === 'authorized';
+  return {
+    reasons: authorized ? [] : ['alarm-auth-denied'],
+    isArmReliable: authorized,
+    isAggressiveOEM: false,
+  };
 }

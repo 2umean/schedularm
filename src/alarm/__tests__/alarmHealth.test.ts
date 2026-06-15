@@ -1,4 +1,4 @@
-import { deriveHealth, NativePermissionSnapshot } from '../alarmHealth';
+import { deriveHealth, deriveIosHealth, NativePermissionSnapshot } from '../alarmHealth';
 
 const allGranted: NativePermissionSnapshot = {
   canPostNotifications: true,
@@ -67,4 +67,23 @@ test('empty manufacturer string → isAggressiveOEM false, isArmReliable true', 
   const h = deriveHealth(allGranted, '');
   expect(h.isAggressiveOEM).toBe(false);
   expect(h.isArmReliable).toBe(true);
+});
+
+test('iOS authorized → reliable, no reasons, never aggressive-OEM', () => {
+  const h = deriveIosHealth('authorized');
+  expect(h.isArmReliable).toBe(true);
+  expect(h.reasons).toEqual([]);
+  expect(h.isAggressiveOEM).toBe(false);
+});
+
+test('iOS denied → not reliable, alarm-auth-denied reason', () => {
+  const h = deriveIosHealth('denied');
+  expect(h.isArmReliable).toBe(false);
+  expect(h.reasons).toEqual(['alarm-auth-denied']);
+});
+
+test('iOS notDetermined → not reliable, alarm-auth-denied reason', () => {
+  const h = deriveIosHealth('notDetermined');
+  expect(h.isArmReliable).toBe(false);
+  expect(h.reasons).toEqual(['alarm-auth-denied']);
 });
