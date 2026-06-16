@@ -32,6 +32,7 @@ const config: ExpoConfig = {
   },
   plugins: [
     './modules/schedularm-alarm/plugin/withSchedularmAlarm',
+    'expo-font',
     [
       'expo-splash-screen',
       {
