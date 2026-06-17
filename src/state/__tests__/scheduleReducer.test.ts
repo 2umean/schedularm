@@ -82,3 +82,29 @@ test('edit-arrival shifts the anchor; durations unchanged', () => {
   expect(DateTime.fromMillis(d.arrival, { zone: 'UTC' }).toFormat('HH:mm')).toBe('07:00');
   expect(after.travel).toBe(SEED_DEFAULTS.travel);
 });
+
+test('hydrate replaces the whole state (restoring a draft)', () => {
+  const restored: ScheduleState = {
+    arrival: at(8, 30),
+    zone: 'Asia/Seoul',
+    contingency: 20,
+    travel: 90,
+    prep: 30,
+    sleep: 450,
+  };
+  expect(scheduleReducer(start(), { type: 'hydrate', state: restored })).toEqual(restored);
+});
+
+test('roll-arrival moves the anchor only (durations untouched)', () => {
+  const armed = scheduleReducer(start(), { type: 'set-arrival', instant: at(6, 0), zone: 'UTC' });
+  const after = scheduleReducer(armed, { type: 'roll-arrival', instant: at(6, 0) + 86_400_000 });
+  expect(after.arrival).toBe(at(6, 0) + 86_400_000);
+  expect(after.travel).toBe(SEED_DEFAULTS.travel);
+  expect(after.sleep).toBe(SEED_DEFAULTS.sleep);
+});
+
+test('roll-arrival before an arrival exists is a no-op', () => {
+  const before = start();
+  const after = scheduleReducer(before, { type: 'roll-arrival', instant: at(6, 0) });
+  expect(after).toBe(before);
+});

@@ -38,7 +38,7 @@ export const en = {
   } satisfies Record<ValidationIssue['kind'], string>,
   duration: { contingency: 'contingency', travel: 'travel', prep: 'prep', sleep: 'sleep' },
   timeField: { arrival: 'arrival', wake: 'wake-up', leaveHome: 'leave-home', fallAsleep: 'fall-asleep' },
-  editor: { setTime: 'Set {{field}} time', cancel: 'Cancel', set: 'Set' },
+  editor: { setTime: 'Set {{field}} time', cancel: 'Cancel', set: 'Set', hours: 'hours', minutes: 'minutes' },
   onboarding: {
     title: 'Let’s make sure your alarm can wake you',
     subtitle: 'schedularm is a safety alarm. These settings stop your phone from silently killing it.',

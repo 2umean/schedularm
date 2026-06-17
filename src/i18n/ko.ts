@@ -37,7 +37,7 @@ export const ko: typeof en = {
   },
   duration: { contingency: '여유', travel: '이동', prep: '준비', sleep: '수면' },
   timeField: { arrival: '도착', wake: '기상', leaveHome: '출발', fallAsleep: '잠들기' },
-  editor: { setTime: '{{field}} 시간 설정', cancel: '취소', set: '설정' },
+  editor: { setTime: '{{field}} 시간 설정', cancel: '취소', set: '설정', hours: '시간', minutes: '분' },
   onboarding: {
     title: '알람이 꼭 울리도록 설정할게요',
     subtitle: 'schedularm은 안전 알람이에요. 휴대폰이 알람을 조용히 종료하지 못하도록 설정해 주세요.',

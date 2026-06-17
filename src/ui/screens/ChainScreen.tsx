@@ -12,7 +12,7 @@ import { DurationPill } from '../components/DurationPill';
 import { StatusBanner } from '../components/StatusBanner';
 import { TimeEditorModal } from '../components/TimeEditorModal';
 import { TimeRow } from '../components/TimeRow';
-import { formatClockWithDay, pickedTimeToInstant } from '../format';
+import { formatAlarmDate, formatClockWithDay, pickedTimeToInstant } from '../format';
 import { colors, fonts, radii, shadows, spacing } from '../theme';
 
 type DurationField = 'contingency' | 'travel' | 'prep' | 'sleep';
@@ -31,8 +31,7 @@ const issueText = (i: ValidationIssue): string =>
     : t(`issue.${i.kind}`);
 
 export function ChainScreen() {
-  const { state, zone, schedule, derived, issues, armable, nowMs, dispatch, persistPresets } =
-    useSchedule();
+  const { state, zone, schedule, derived, issues, armable, nowMs, dispatch } = useSchedule();
   const { armed, health, arm, disarm, refreshHealth } = useArming();
 
   const [timeEditor, setTimeEditor] = useState<TimeField | null>(null);
@@ -40,6 +39,10 @@ export function ChainScreen() {
 
   const ref = schedule?.arrival ?? nowMs;
   const fmt = (ms: number) => formatClockWithDay(ms, ref, zone);
+
+  // Shown only when the alarm rings on a future date (relative to now), so a
+  // rolled-to-next-day schedule is unmistakable; hidden for a same-day alarm.
+  const alarmDate = derived ? formatAlarmDate(derived.wake, nowMs, zone) : null;
 
   const armedSummary = (() => {
     if (armed == null) return null;
@@ -52,9 +55,9 @@ export function ChainScreen() {
 
   const onArm = async () => {
     if (!schedule || !armable) return;
+    // schedule is already rolled to its next future occurrence (useSchedule), so
+    // arming a passed-time chain advances it to the next day rather than failing.
     await arm(schedule);
-    // Sticky-on-arm (spec §9) — but presets are a convenience; never let their write block the alarm.
-    await persistPresets().catch(() => {});
   };
 
   const openTime = (field: TimeField) => setTimeEditor(field);
@@ -111,7 +114,14 @@ export function ChainScreen() {
   return (
     <LinearGradient colors={[colors.skyBgTop, colors.skyBgBottom]} style={styles.screen}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.wordmark}>{t('chain.wordmark')}</Text>
+        <View style={styles.header}>
+          <Text style={styles.wordmark}>{t('chain.wordmark')}</Text>
+          {alarmDate ? (
+            <View style={styles.dateChip}>
+              <Text style={styles.dateChipText}>{alarmDate}</Text>
+            </View>
+          ) : null}
+        </View>
 
         <StatusBanner
           health={health}
@@ -234,14 +244,26 @@ export function ChainScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   scroll: { padding: spacing.xl, paddingTop: 56 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.s,
+  },
   wordmark: {
     color: colors.ink2,
     fontSize: 11,
     fontFamily: fonts.extra,
     letterSpacing: 1.5,
-    marginBottom: spacing.s,
     marginLeft: spacing.xs,
   },
+  dateChip: {
+    backgroundColor: colors.sky500,
+    borderRadius: radii.pill,
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+  },
+  dateChipText: { color: colors.white, fontSize: 11, fontFamily: fonts.extra },
   issue: {
     backgroundColor: colors.warnBg,
     color: colors.warnText,

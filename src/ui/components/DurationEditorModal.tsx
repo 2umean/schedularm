@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { t } from '../../i18n';
-import { formatDuration } from '../format';
+import { composeDuration, splitDuration } from '../format';
 import { colors, fonts, radii, spacing } from '../theme';
 
-const STEP = 5; // minutes
+const STEP = 1; // minute — fine-grained nudge (was 5)
 
 type Props = {
   visible: boolean;
@@ -16,6 +16,10 @@ type Props = {
   onConfirm: (minutes: number) => void;
 };
 
+const clampTotal = (n: number, max: number) => Math.min(max, Math.max(0, n));
+const onlyDigits = (s: string) => s.replace(/[^0-9]/g, '');
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
 export function DurationEditorModal({
   visible,
   title,
@@ -24,10 +28,45 @@ export function DurationEditorModal({
   onCancel,
   onConfirm,
 }: Props) {
-  const [minutes, setMinutes] = useState(initialMinutes);
+  const seed = clampTotal(Math.round(initialMinutes), max);
+  const seedParts = splitDuration(seed);
+  const [minutes, setMinutes] = useState(seed);
+  const [hStr, setHStr] = useState(String(seedParts.hours));
+  const [mStr, setMStr] = useState(pad2(seedParts.mins));
 
-  const adjust = (delta: number) =>
-    setMinutes((m) => Math.min(max, Math.max(0, m + delta)));
+  /** Push a committed total back into both fields (used by ± and on blur). */
+  const syncFields = (total: number) => {
+    const p = splitDuration(total);
+    setHStr(String(p.hours));
+    setMStr(pad2(p.mins));
+  };
+
+  const setTotal = (total: number) => {
+    const clamped = clampTotal(total, max);
+    setMinutes(clamped);
+    syncFields(clamped);
+  };
+
+  // While typing, track the parsed total live. Snap the visible fields to the
+  // canonical clamped value when the entry is out of bounds (capped) OR the
+  // minutes carry past 59 — so what's shown always equals what Set commits
+  // (e.g. "0:75" normalizes to "1:15"; "16:30" over max snaps to "16:00").
+  const recompute = (h: string, m: string) => {
+    const { total, capped } = composeDuration(h, m, max);
+    setMinutes(total);
+    if (capped || Number(m || '0') >= 60) syncFields(total);
+  };
+
+  const onChangeHours = (txt: string) => {
+    const v = onlyDigits(txt).slice(0, 2);
+    setHStr(v);
+    recompute(v, mStr);
+  };
+  const onChangeMins = (txt: string) => {
+    const v = onlyDigits(txt).slice(0, 2);
+    setMStr(v);
+    recompute(hStr, v);
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
@@ -35,11 +74,35 @@ export function DurationEditorModal({
         <View style={styles.card}>
           <Text style={styles.title}>{title}</Text>
           <View style={styles.stepper}>
-            <Pressable onPress={() => adjust(-STEP)} style={[styles.step, styles.minus]}>
+            <Pressable onPress={() => setTotal(minutes - STEP)} style={[styles.step, styles.minus]}>
               <Text style={[styles.stepText, styles.minusText]}>−</Text>
             </Pressable>
-            <Text style={styles.value}>{formatDuration(minutes)}</Text>
-            <Pressable onPress={() => adjust(STEP)} style={[styles.step, styles.plus]}>
+            <View style={styles.fields}>
+              <TextInput
+                style={styles.input}
+                value={hStr}
+                onChangeText={onChangeHours}
+                onBlur={() => syncFields(minutes)}
+                keyboardType="number-pad"
+                maxLength={2}
+                selectTextOnFocus
+                returnKeyType="done"
+                accessibilityLabel={t('editor.hours')}
+              />
+              <Text style={styles.colon}>:</Text>
+              <TextInput
+                style={styles.input}
+                value={mStr}
+                onChangeText={onChangeMins}
+                onBlur={() => syncFields(minutes)}
+                keyboardType="number-pad"
+                maxLength={2}
+                selectTextOnFocus
+                returnKeyType="done"
+                accessibilityLabel={t('editor.minutes')}
+              />
+            </View>
+            <Pressable onPress={() => setTotal(minutes + STEP)} style={[styles.step, styles.plus]}>
               <Text style={[styles.stepText, styles.plusText]}>＋</Text>
             </Pressable>
           </View>
@@ -79,7 +142,24 @@ const styles = StyleSheet.create({
   stepText: { fontSize: 26, fontFamily: fonts.extra },
   minusText: { color: colors.sky700 },
   plusText: { color: colors.white },
-  value: { color: colors.ink, fontSize: 28, fontFamily: fonts.clock },
+  fields: { flexDirection: 'row', alignItems: 'center' },
+  input: {
+    color: colors.ink,
+    fontSize: 28,
+    fontFamily: fonts.clock,
+    textAlign: 'center',
+    minWidth: 50,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.xs,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.sky500,
+  },
+  colon: {
+    color: colors.ink,
+    fontSize: 28,
+    fontFamily: fonts.clock,
+    marginHorizontal: spacing.xs,
+  },
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',

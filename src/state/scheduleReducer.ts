@@ -24,7 +24,12 @@ export type ScheduleAction =
   | { type: 'edit-wake'; instant: number }
   | { type: 'edit-leave-home'; instant: number }
   | { type: 'edit-fall-asleep'; instant: number }
-  | { type: 'edit-arrival'; instant: number };
+  | { type: 'edit-arrival'; instant: number }
+  // Replace the whole state from a restored draft (storage → reducer).
+  | { type: 'hydrate'; state: ScheduleState }
+  // Advance the anchor to its next future occurrence (rollScheduleToFuture); no
+  // user intent, so durations are untouched. No-op before an arrival exists.
+  | { type: 'roll-arrival'; instant: number };
 
 export function initialState(durations: Durations, zone: string): ScheduleState {
   return { arrival: null, zone, ...durations };
@@ -54,6 +59,10 @@ function writeBack(state: ScheduleState, s: Schedule): ScheduleState {
  */
 export function scheduleReducer(state: ScheduleState, action: ScheduleAction): ScheduleState {
   switch (action.type) {
+    case 'hydrate':
+      return action.state;
+    case 'roll-arrival':
+      return state.arrival == null ? state : { ...state, arrival: action.instant };
     case 'set-arrival':
       return { ...state, arrival: action.instant, zone: action.zone };
     case 'set-duration':
