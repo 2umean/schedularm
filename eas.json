@@ -27,9 +27,7 @@
   "submit": {
     "production": {
       "ios": {
-        "ascApiKeyPath": "./credentials/AuthKey.p8",
-        "ascApiKeyId": "REPLACE_WITH_KEY_ID",
-        "ascApiKeyIssuerId": "REPLACE_WITH_ISSUER_ID"
+        "ascAppId": "6780713952"
       }
     }
   }
