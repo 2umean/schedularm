@@ -45,11 +45,22 @@ test('a passed primary event blocks arming', () => {
   expect(isChainArmable(issues)).toBe(false);
 });
 
-test('a chain with no alarm/push pill cannot be armed (nothing to schedule)', () => {
+test('a chain with no alarm pill cannot be armed (a safety alarm needs a guaranteed ring)', () => {
   const c: Chain = { arrival: at(ZONE, 2026, 6, 30, 9, 0), zone: ZONE, pills: [pill('a', 60), pill('b', 30)] };
   const now = at(ZONE, 2026, 6, 29, 23, 0);
   const issues = validateChain(c, now);
-  expect(kinds(issues)).toContain('no-events');
+  expect(kinds(issues)).toContain('no-alarm');
+  expect(isChainArmable(issues)).toBe(false);
+});
+
+test('a push-only chain is not armable — pushes are best-effort, not a guaranteed alarm', () => {
+  const c: Chain = {
+    arrival: at(ZONE, 2026, 6, 30, 9, 0),
+    zone: ZONE,
+    pills: [pill('p', 30, 'push'), pill('x', 60)],
+  };
+  const issues = validateChain(c, at(ZONE, 2026, 6, 29, 23, 0));
+  expect(kinds(issues)).toContain('no-alarm');
   expect(isChainArmable(issues)).toBe(false);
 });
 
@@ -67,10 +78,10 @@ test('a non-finite arrival fails closed (no-arrival), never open', () => {
   expect(isChainArmable(issues)).toBe(false);
 });
 
-test('an empty chain reports no-events and is not armable', () => {
+test('an empty chain reports no-alarm and is not armable', () => {
   const c: Chain = { arrival: at(ZONE, 2026, 6, 30, 9, 0), zone: ZONE, pills: [] };
   const issues = validateChain(c, at(ZONE, 2026, 6, 29, 23, 0));
-  expect(kinds(issues)).toContain('no-events');
+  expect(kinds(issues)).toContain('no-alarm');
   expect(isChainArmable(issues)).toBe(false);
 });
 

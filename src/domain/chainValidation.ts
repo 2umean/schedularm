@@ -15,7 +15,7 @@ export type ChainValidationIssue =
   | { kind: 'pill-out-of-range'; id: string } // a pill duration outside [0, MAX_PILL_MINUTES]
   | { kind: 'infeasible' } // a negative pill duration (shouldn't occur via the reducer; defensive)
   | { kind: 'chain-too-long' } // total span exceeds MAX_CHAIN_SPAN
-  | { kind: 'no-events' } // no alarm/push pills — nothing to schedule, so nothing to arm
+  | { kind: 'no-alarm' } // no alarm pill — a safety alarm needs ≥1 OS-guaranteed ring, not just pushes
   | { kind: 'past-event' } // the primary instant has already passed (rollover should prevent this)
   | { kind: 'bedtime-passed' }; // the first pill already began (non-blocking nudge; v1's sleep-debt analog)
 
@@ -37,8 +37,9 @@ export function validateChain(chain: Chain, nowMs: number): ChainValidationIssue
     issues.push({ kind: 'chain-too-long' });
   }
 
-  const hasEvent = chain.pills.some((p) => p.type === 'alarm' || p.type === 'push');
-  if (!hasEvent) issues.push({ kind: 'no-events' });
+  // A safety alarm must have at least one OS-guaranteed ring; push-only chains
+  // would show "armed" while relying on suppressible best-effort notifications.
+  if (!chain.pills.some((p) => p.type === 'alarm')) issues.push({ kind: 'no-alarm' });
 
   // Compute the chain once; reuse it for both the anchor check and the
   // primary/bedtime gates (primaryInstantFromComputed avoids a second build).
@@ -63,7 +64,7 @@ const BLOCKING: ReadonlyArray<ChainValidationIssue['kind']> = [
   'pill-out-of-range',
   'infeasible',
   'chain-too-long',
-  'no-events',
+  'no-alarm',
   'past-event',
 ];
 

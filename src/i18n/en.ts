@@ -1,4 +1,4 @@
-import type { ChainValidationIssue, DayLabel, ValidationIssue } from '../domain';
+import type { ChainValidationIssue, DayLabel } from '../domain';
 import type { HealthReason } from '../alarm/alarmHealth';
 
 /** English catalog — the FALLBACK locale. ko.ts must mirror this key set exactly. */
@@ -29,16 +29,7 @@ export const en = {
     'battery-not-whitelisted': 'Battery optimization may kill the alarm — tap to fix',
     'alarm-auth-denied': 'Alarm permission is off — turn it on so the alarm can wake you',
   } satisfies Record<HealthReason, string>,
-  issue: {
-    infeasible: 'This timing is impossible — a step would take negative time.',
-    'past-wake': 'The wake-up time has already passed.',
-    'sleep-debt': 'Heads up: not much time left to sleep.',
-    'chain-too-long': 'The total span is unrealistically long.',
-    'out-of-range': 'The {{field}} duration is out of range.',
-  } satisfies Record<ValidationIssue['kind'], string>,
-  duration: { contingency: 'contingency', travel: 'travel', prep: 'prep', sleep: 'sleep' },
-  timeField: { arrival: 'arrival', wake: 'wake-up', leaveHome: 'leave-home', fallAsleep: 'fall-asleep' },
-  editor: { setTime: 'Set {{field}} time', cancel: 'Cancel', set: 'Set', hours: 'hours', minutes: 'minutes' },
+  editor: { cancel: 'Cancel', set: 'Set' },
   onboarding: {
     title: 'Let’s make sure your alarm can wake you',
     subtitle: 'schedularm is a safety alarm. These settings stop your phone from silently killing it.',
@@ -80,6 +71,8 @@ export const en = {
     arrivalSummary: '🛬 Arrive {{time}}',
     addPill: '＋ Add pill',
     bedtime: 'Bedtime',
+    anchorLabel: 'Arrive',
+    badge: { push: 'Notify', alarm: 'Alarm' },
     eventEnds: '{{name}} ends',
     armedSummary: '✓ Armed · {{label}} {{time}}',
     totalPrep: 'Total prep time',
@@ -109,7 +102,7 @@ export const en = {
     'pill-out-of-range': 'A pill’s duration is out of range.',
     infeasible: 'This timing is impossible — a step would take negative time.',
     'chain-too-long': 'The total span is unrealistically long.',
-    'no-events': 'Add a notify or alarm pill — there’s nothing to ring yet.',
+    'no-alarm': 'Add an ⏰ alarm pill — a notification alone isn’t guaranteed to wake you.',
     'past-event': 'This schedule has already passed.',
     'bedtime-passed': 'Heads up: your start time has already passed.',
   } satisfies Record<ChainValidationIssue['kind'], string>,

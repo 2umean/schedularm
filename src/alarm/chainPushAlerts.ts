@@ -1,16 +1,21 @@
-import { Chain, computeChain, toLocalClock } from '../domain';
+import { Chain, ChainComputed, toLocalClock } from '../domain';
 import { t } from '../i18n';
 
 /**
  * v2 companion push alerts. Schedules a push for every event-bearing pill
  * (push, and — as a Phase-2 best-effort bridge — any alarm pill NOT taken by the
- * single native strong alarm). Phase 3 routes every alarm pill through the native
- * module instead. Best-effort by design: expo-notifications is imported
- * dynamically so a dev client built without it degrades gracefully.
+ * single native strong alarm, identified by `excludePillId`). Phase 3 routes
+ * every alarm pill through the native module instead. Best-effort by design:
+ * expo-notifications is imported dynamically so a dev client built without it
+ * degrades gracefully.
  */
 const CHANNEL_ID = 'chain-alerts';
 
-export async function scheduleChainPush(chain: Chain, nativeAlarmInstant?: number): Promise<void> {
+export async function scheduleChainPush(
+  chain: Chain,
+  computed: ChainComputed,
+  excludePillId?: string,
+): Promise<void> {
   try {
     const Notifications = await import('expo-notifications');
 
@@ -31,13 +36,11 @@ export async function scheduleChainPush(chain: Chain, nativeAlarmInstant?: numbe
     // Single active schedule — re-arming replaces any previous chain alerts.
     await Notifications.cancelAllScheduledNotificationsAsync();
 
-    const computed = computeChain(chain);
-    if (!computed) return;
     const arrival = toLocalClock(computed.arrival, chain.zone);
 
     for (const it of computed.items) {
       if (it.pill.type === 'none') continue; // timing only, no alert
-      if (it.endAt === nativeAlarmInstant) continue; // the native strong alarm fires this one
+      if (it.pill.id === excludePillId) continue; // the native strong alarm fires this one
       if (it.endAt <= Date.now()) continue; // already past (best-effort, skip)
       await Notifications.scheduleNotificationAsync({
         content: {
@@ -45,7 +48,8 @@ export async function scheduleChainPush(chain: Chain, nativeAlarmInstant?: numbe
           body: t('alerts.pill.body', { time: toLocalClock(it.endAt, chain.zone), arrival }),
           sound: 'default',
         },
-        identifier: `chain-${it.endAt}`,
+        // Keyed by stable pill id — endAt is not unique (a 0-min pill can share one).
+        identifier: `chain-${it.pill.id}`,
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DATE,
           date: it.endAt,

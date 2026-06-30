@@ -1,17 +1,15 @@
 import { Platform } from 'react-native';
 
 import * as native from '../../modules/schedularm-alarm';
-import { Chain, computeChain, Schedule, reverseCalc } from '../domain';
+import { Chain, computeChain } from '../domain';
 import { AlarmHealth, deriveHealth, deriveIosHealth } from './alarmHealth';
-import { cancelChainAlerts, scheduleChainAlerts } from './chainAlerts';
-import { scheduleChainPush } from './chainPushAlerts';
+import { cancelChainPush, scheduleChainPush } from './chainPushAlerts';
 
 const isAndroid = Platform.OS === 'android';
 const isIos = Platform.OS === 'ios';
 
-/** Best-effort: ensure local-notification permission so the companion
- * fall-asleep/leave-home alerts can fire on iOS. Never blocks the AlarmKit
- * wake alarm; failures are swallowed. */
+/** Best-effort: ensure local-notification permission so companion push pills can
+ * fire on iOS. Never blocks the AlarmKit wake alarm; failures are swallowed. */
 function ensureIosNotificationPermission(): void {
   void (async () => {
     try {
@@ -31,19 +29,8 @@ function ensureIosNotificationPermission(): void {
 export const AlarmService = {
   isSupported: isAndroid || isIos,
 
-  /** Arm the wake-up alarm for a schedule (fires at its derived wake instant). */
-  arm(schedule: Schedule): void {
-    if (!isAndroid && !isIos) return;
-    const d = reverseCalc(schedule);
-    native.scheduleAlarm(d.wake, d.leaveHome);
-    // Companion fall-asleep/leave-home push alerts — best-effort, never allowed
-    // to affect the alarm itself (fire-and-forget, errors swallowed).
-    if (isIos) ensureIosNotificationPermission();
-    void scheduleChainAlerts(schedule);
-  },
-
   /**
-   * v2 arm path (Schedularm UI v2). Phase-2 single-alarm BRIDGE: the earliest
+   * Arm a chain (Schedularm UI v2). Phase-2 single-alarm BRIDGE: the earliest
    * alarm pill becomes the one native strong alarm; every other event pill (push,
    * and any later alarm pill) fires a best-effort push. Phase 3 upgrades this to
    * N true native alarms. No-op without a usable arrival.
@@ -53,17 +40,23 @@ export const AlarmService = {
     const computed = computeChain(chain);
     if (!computed) return;
     const alarmItem = computed.items.find((it) => it.pill.type === 'alarm');
-    // leave-instant rides along for the ring countdown; use the arrival anchor.
-    if (alarmItem) native.scheduleAlarm(alarmItem.endAt, computed.arrival);
+    if (alarmItem) {
+      // The ring countdown's "leave" target is the start of the FINAL pill (the
+      // commute/last leg = when the user must head out), not the arrival anchor.
+      const last = computed.items[computed.items.length - 1];
+      const leave = last ? last.startAt : computed.arrival;
+      native.scheduleAlarm(alarmItem.endAt, leave);
+    }
     if (isIos) ensureIosNotificationPermission();
-    void scheduleChainPush(chain, alarmItem?.endAt);
+    // Skip the native-armed pill by identity (endAt is not unique).
+    void scheduleChainPush(chain, computed, alarmItem?.pill.id);
   },
 
   /** Cancel any ringing + scheduled alarm (also clears native boot re-arm on Android). */
   dismiss(): void {
     if (!isAndroid && !isIos) return;
     native.dismiss();
-    void cancelChainAlerts();
+    void cancelChainPush();
   },
 
   /** Current health snapshot. */

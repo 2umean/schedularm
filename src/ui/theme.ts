@@ -26,6 +26,45 @@ export const colors = {
   disabledText: '#8CA0BC',
   coral: '#FF8A7A',
   white: '#FFFFFF',
+  // v2 pill-chain palette (Schedularm UI v2).
+  faint: '#94A8C2', // bedtime cap + drag handles
+  pushEventBorder: '#BBD9F7', // push event-row outline
+  alarmCardBg: '#FFF8EE', // alarm pill card fill
+  alarmCardBorder: '#FFE0A6', // alarm pill card border
+  alarmAccentText: '#E8743C', // alarm event time
+} as const;
+
+/**
+ * Per-pill-type visual recipe (v2). Keyed by PillType so a card/event row reads
+ * its colors from one place instead of branching on type with inline hex.
+ */
+export const pillStyle = {
+  none: {
+    cardBg: colors.bubble,
+    cardBorder: 'transparent',
+    accent: 'transparent',
+    durText: colors.ink2,
+  },
+  push: {
+    cardBg: colors.skyBg,
+    cardBorder: colors.line,
+    accent: colors.sky500,
+    durText: colors.sky700,
+    eventBorder: colors.pushEventBorder,
+    eventTime: colors.sky700,
+    badgeBg: colors.sky500,
+    eventIcon: '🔔',
+  },
+  alarm: {
+    cardBg: colors.alarmCardBg,
+    cardBorder: colors.alarmCardBorder,
+    accent: colors.amber,
+    durText: colors.warnText,
+    eventBorder: colors.coral,
+    eventTime: colors.alarmAccentText,
+    badgeBg: colors.amber,
+    eventIcon: '⏰',
+  },
 } as const;
 
 export const radii = { bubble: 20, modal: 24, pill: 999 } as const;

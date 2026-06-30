@@ -48,3 +48,17 @@ test('a missing pills array is coerced to empty so the arm-restore path cannot c
   await AsyncStorage.setItem(ARMED_KEY, JSON.stringify({ arrival: sample.arrival, zone: 'UTC' }));
   expect((await loadArmedChain())?.pills).toEqual([]);
 });
+
+test('malformed pill elements are sanitised/dropped, not passed raw to the engine', async () => {
+  await AsyncStorage.setItem(
+    ARMED_KEY,
+    JSON.stringify({
+      arrival: sample.arrival,
+      zone: 'UTC',
+      pills: [null, { icon: '🚿', name: 'x', dur: 'nope', type: 'bogus' }],
+    }),
+  );
+  const pills = (await loadArmedChain())?.pills;
+  expect(pills).toHaveLength(1); // the null element is dropped
+  expect(pills?.[0]).toMatchObject({ id: 'pill-1', dur: 0, type: 'none' }); // coerced to safe values
+});

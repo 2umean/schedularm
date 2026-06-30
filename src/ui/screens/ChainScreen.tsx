@@ -1,197 +1,170 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AlarmService } from '../../alarm/AlarmService';
-import { BOUNDS, resolveArrivalInstant, reverseCalc, ValidationIssue } from '../../domain';
-import { useArming } from '../../hooks/useArming';
-import { useSchedule } from '../../hooks/useSchedule';
+import {
+  ChainValidationIssue,
+  computeChain,
+  primaryInstantFromComputed,
+  resolveArrivalInstant,
+  toLocalClock,
+} from '../../domain';
+import { useArmingChain } from '../../hooks/useArmingChain';
+import { useChain } from '../../hooks/useChain';
 import { t } from '../../i18n';
-import { DurationEditorModal } from '../components/DurationEditorModal';
-import { DurationPill } from '../components/DurationPill';
-import { StatusBanner } from '../components/StatusBanner';
-import { TimeEditorModal } from '../components/TimeEditorModal';
-import { TimeRow } from '../components/TimeRow';
-import { formatAlarmDate, formatClockWithDay, pickedTimeToInstant } from '../format';
+import { ArrivalPickerSheet } from '../components/ArrivalPickerSheet';
+import { ChainList } from '../components/ChainList';
+import { PillDraft, PillEditorSheet } from '../components/PillEditorSheet';
+import { ReorderView } from '../components/ReorderView';
+import { formatAlarmDate, pickedTimeToInstant } from '../format';
 import { colors, fonts, radii, shadows, spacing } from '../theme';
 
-type DurationField = 'contingency' | 'travel' | 'prep' | 'sleep';
-type TimeField = 'arrival' | 'wake' | 'leaveHome' | 'fallAsleep';
+const DEFAULT_NEW_PILL: PillDraft = { icon: '🧥', name: '', dur: 15, type: 'push' };
 
-const DURATION_EMOJI: Record<DurationField, string> = {
-  contingency: '🛟',
-  travel: '🚕',
-  prep: '🚿',
-  sleep: '😴',
-};
+const issueText = (i: ChainValidationIssue): string => t(`chainIssue.${i.kind}`);
 
-const issueText = (i: ValidationIssue): string =>
-  i.kind === 'out-of-range'
-    ? t('issue.out-of-range', { field: t(`duration.${i.field}`) })
-    : t(`issue.${i.kind}`);
+type EditorState = { mode: 'create' } | { mode: 'edit'; id: string } | null;
 
 export function ChainScreen() {
-  const { state, zone, schedule, derived, issues, armable, nowMs, dispatch } = useSchedule();
-  const { armed, health, arm, disarm, refreshHealth } = useArming();
+  const { chain, computed, issues, armable, zone, nowMs, setArrival, addPill, updatePill, removePill, reorderPill } =
+    useChain();
+  const { armed, health, arm, disarm, refreshHealth } = useArmingChain();
 
-  const [timeEditor, setTimeEditor] = useState<TimeField | null>(null);
-  const [durationEditor, setDurationEditor] = useState<DurationField | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [editor, setEditor] = useState<EditorState>(null);
+  const [reorderOpen, setReorderOpen] = useState(false);
+  const [highlightId, setHighlightId] = useState<string | undefined>(undefined);
 
-  const ref = schedule?.arrival ?? nowMs;
-  const fmt = (ms: number) => formatClockWithDay(ms, ref, zone);
+  const atRisk = !health.isArmReliable || health.reasons.length > 0;
 
-  // Shown only when the alarm rings on a future date (relative to now), so a
-  // rolled-to-next-day schedule is unmistakable; hidden for a same-day alarm.
-  const alarmDate = derived ? formatAlarmDate(derived.wake, nowMs, zone) : null;
-
-  const armedSummary = (() => {
-    if (armed == null) return null;
-    const d = reverseCalc(armed);
+  // Armed snapshot summary (primary event label/time + the ring date chip).
+  const armedInfo = useMemo(() => {
+    if (!armed) return null;
+    const c = computeChain(armed);
+    if (!c) return null;
+    const primary = primaryInstantFromComputed(c);
+    const item = c.items.find((it) => it.endAt === primary);
     return {
-      wake: formatClockWithDay(d.wake, ref, zone).clock,
-      leave: formatClockWithDay(d.leaveHome, ref, zone).clock,
+      label: item ? t('chainScreen.eventEnds', { name: item.pill.name }) : '',
+      time: toLocalClock(primary, armed.zone),
+      date: formatAlarmDate(primary, nowMs, armed.zone),
     };
-  })();
+  }, [armed, nowMs]);
 
-  const onArm = async () => {
-    if (!schedule || !armable) return;
-    // schedule is already rolled to its next future occurrence (useSchedule), so
-    // arming a passed-time chain advances it to the next day rather than failing.
-    await arm(schedule);
-  };
-
-  const openTime = (field: TimeField) => setTimeEditor(field);
-
-  /** Seed the picker with the field's current value so editing starts from it. */
-  const timeEditorInitial = (): Date => {
-    if (timeEditor === 'arrival' && schedule) return new Date(schedule.arrival);
-    if (timeEditor && timeEditor !== 'arrival' && derived) {
-      const base =
-        timeEditor === 'wake'
-          ? derived.wake
-          : timeEditor === 'leaveHome'
-            ? derived.leaveHome
-            : derived.fallAsleep;
-      return new Date(base);
-    }
-    return new Date();
-  };
-
-  const confirmTime = (hour: number, minute: number) => {
-    if (!timeEditor) return;
-    if (timeEditor === 'arrival') {
-      const instant = schedule
-        ? pickedTimeToInstant(schedule.arrival, hour, minute, zone)
+  const onConfirmArrival = (hour: number, minute: number) => {
+    const instant =
+      chain.arrival != null
+        ? pickedTimeToInstant(chain.arrival, hour, minute, zone)
         : resolveArrivalInstant(hour, minute, zone, nowMs);
-      dispatch({ type: schedule ? 'edit-arrival' : 'set-arrival', instant, zone });
-    } else if (derived) {
-      const base =
-        timeEditor === 'wake'
-          ? derived.wake
-          : timeEditor === 'leaveHome'
-            ? derived.leaveHome
-            : derived.fallAsleep;
-      const instant = pickedTimeToInstant(base, hour, minute, zone);
-      dispatch({
-        type:
-          timeEditor === 'wake'
-            ? 'edit-wake'
-            : timeEditor === 'leaveHome'
-              ? 'edit-leave-home'
-              : 'edit-fall-asleep',
-        instant,
-      });
-    }
-    setTimeEditor(null);
+    setArrival(instant);
+    setPickerOpen(false);
   };
 
-  const confirmDuration = (minutes: number) => {
-    if (!durationEditor) return;
-    dispatch({ type: 'set-duration', field: durationEditor, minutes });
-    setDurationEditor(null);
+  const onSubmitPill = (draft: PillDraft) => {
+    if (editor?.mode === 'edit') {
+      updatePill(editor.id, draft);
+      setHighlightId(editor.id);
+    } else {
+      setHighlightId(addPill(draft));
+    }
+    setEditor(null);
   };
+
+  const editingPill =
+    editor?.mode === 'edit' ? chain.pills.find((p) => p.id === editor.id) : undefined;
 
   return (
     <LinearGradient colors={[colors.skyBgTop, colors.skyBgBottom]} style={styles.screen}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.header}>
           <Text style={styles.wordmark}>{t('chain.wordmark')}</Text>
-          {alarmDate ? (
+          {armedInfo?.date ? (
             <View style={styles.dateChip}>
-              <Text style={styles.dateChipText}>{alarmDate}</Text>
+              <Text style={styles.dateChipText}>{armedInfo.date}</Text>
             </View>
           ) : null}
         </View>
 
-        <StatusBanner
-          health={health}
-          armedSummary={armedSummary}
-          onFixPress={async () => {
-            await AlarmService.requestCritical();
-            refreshHealth();
-          }}
-        />
-
-        {issues.map((i, idx) => (
-          <Text key={idx} style={styles.issue}>
-            ⚠ {issueText(i)}
-          </Text>
-        ))}
-
-        {schedule && derived ? (
-          <View style={styles.chain}>
-            <TimeRow
-              icon="🌙"
-              label={t('chain.fallAsleep')}
-              {...fmt(derived.fallAsleep)}
-              onPress={() => openTime('fallAsleep')}
-            />
-            <DurationPill icon="😴" minutes={state.sleep} onPress={() => setDurationEditor('sleep')} />
-
-            <TimeRow
-              icon="⏰"
-              label={t('chain.wakeUp')}
-              badge={t('chain.alarmBadge')}
-              emphasis="alarm"
-              {...fmt(derived.wake)}
-              onPress={() => openTime('wake')}
-            />
-            <DurationPill icon="🚿" minutes={state.prep} onPress={() => setDurationEditor('prep')} />
-
-            <TimeRow
-              icon="🚪"
-              label={t('chain.leaveHome')}
-              {...fmt(derived.leaveHome)}
-              onPress={() => openTime('leaveHome')}
-            />
-            <View style={styles.pillRow}>
-              <DurationPill icon="🚕" minutes={state.travel} onPress={() => setDurationEditor('travel')} />
-              <DurationPill
-                icon="🛟"
-                minutes={state.contingency}
-                onPress={() => setDurationEditor('contingency')}
-              />
-            </View>
-
-            <TimeRow
-              icon="📍"
-              label={t('chain.arriveBy')}
-              emphasis="anchor"
-              {...fmt(derived.arrival)}
-              onPress={() => openTime('arrival')}
-            />
+        {atRisk ? (
+          <Pressable
+            style={styles.risk}
+            onPress={async () => {
+              await AlarmService.requestCritical();
+              refreshHealth();
+            }}
+          >
+            <Text style={styles.riskTitle}>{t('banner.atRisk')}</Text>
+            {health.reasons.map((r) => (
+              <Text key={r} style={styles.riskLine}>
+                • {t(`reason.${r}`)}
+              </Text>
+            ))}
+          </Pressable>
+        ) : armedInfo ? (
+          <View style={[styles.chip, styles.armed]}>
+            <Text style={styles.armedText}>
+              {t('chainScreen.armedSummary', { label: armedInfo.label, time: armedInfo.time })}
+            </Text>
           </View>
+        ) : chain.arrival != null ? (
+          <View style={[styles.chip, styles.ready]}>
+            <Text style={styles.readyText}>
+              {t('chainScreen.arrivalSummary', { time: toLocalClock(chain.arrival, zone) })}
+            </Text>
+          </View>
+        ) : null}
+
+        {chain.arrival != null
+          ? issues.map((i, idx) => (
+              <Text key={idx} style={styles.issue}>
+                ⚠ {issueText(i)}
+              </Text>
+            ))
+          : null}
+
+        {computed && chain.arrival != null ? (
+          <>
+            <ChainList
+              computed={computed}
+              zone={zone}
+              highlightId={highlightId}
+              onPressPill={(id) => setEditor({ mode: 'edit', id })}
+              onPressAnchor={() => setPickerOpen(true)}
+            />
+
+            <View style={styles.toolRow}>
+              <Pressable style={styles.addPill} onPress={() => setEditor({ mode: 'create' })}>
+                <Text style={styles.addPillText}>{t('chainScreen.addPill')}</Text>
+              </Pressable>
+              {chain.pills.length > 1 ? (
+                <Pressable style={styles.reorder} onPress={() => setReorderOpen(true)}>
+                  <Text style={styles.reorderText}>↕ {t('chainScreen.reorder')}</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </>
         ) : (
-          <Pressable style={styles.empty} onPress={() => openTime('arrival')}>
+          <Pressable style={styles.empty} onPress={() => setPickerOpen(true)}>
             <Text style={styles.emptyIcon}>🛬</Text>
-            <Text style={styles.emptyTitle}>{t('chain.emptyTitle')}</Text>
-            <Text style={styles.emptySub}>{t('chain.emptySub')}</Text>
+            <Text style={styles.emptyTitle}>{t('chainScreen.emptyTitle')}</Text>
+            <Text style={styles.emptySub}>{t('chainScreen.emptySub')}</Text>
+            <View style={styles.emptyBtnWrap}>
+              <LinearGradient
+                colors={[colors.sky500, colors.sky700]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.emptyBtn}
+              >
+                <Text style={styles.emptyBtnText}>{t('chainScreen.setArrival')}</Text>
+              </LinearGradient>
+            </View>
           </Pressable>
         )}
 
-        {schedule ? (
+        {chain.arrival != null ? (
           <Pressable
-            onPress={armed ? disarm : onArm}
+            onPress={armed ? disarm : () => armable && arm(chain)}
             disabled={!armed && !armable}
             style={styles.armWrap}
           >
@@ -217,26 +190,37 @@ export function ChainScreen() {
         ) : null}
       </ScrollView>
 
-      {timeEditor ? (
-        <TimeEditorModal
+      <ArrivalPickerSheet
+        visible={pickerOpen}
+        initial={chain.arrival != null ? new Date(chain.arrival) : new Date()}
+        onCancel={() => setPickerOpen(false)}
+        onConfirm={onConfirmArrival}
+      />
+
+      {editor ? (
+        <PillEditorSheet
           visible
-          title={t('editor.setTime', { field: t(`timeField.${timeEditor}`) })}
-          initial={timeEditorInitial()}
-          onCancel={() => setTimeEditor(null)}
-          onConfirm={confirmTime}
+          mode={editor.mode}
+          initial={editingPill ?? DEFAULT_NEW_PILL}
+          onCancel={() => setEditor(null)}
+          onSubmit={onSubmitPill}
+          onDelete={
+            editor.mode === 'edit'
+              ? () => {
+                  removePill(editor.id);
+                  setEditor(null);
+                }
+              : undefined
+          }
         />
       ) : null}
 
-      {durationEditor ? (
-        <DurationEditorModal
-          visible
-          title={`${DURATION_EMOJI[durationEditor]} ${t(`duration.${durationEditor}`)}`}
-          initialMinutes={state[durationEditor]}
-          max={BOUNDS[durationEditor][1]}
-          onCancel={() => setDurationEditor(null)}
-          onConfirm={confirmDuration}
-        />
-      ) : null}
+      <ReorderView
+        visible={reorderOpen}
+        pills={chain.pills}
+        onClose={() => setReorderOpen(false)}
+        onReorder={reorderPill}
+      />
     </LinearGradient>
   );
 }
@@ -244,26 +228,20 @@ export function ChainScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   scroll: { padding: spacing.xl, paddingTop: 56 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.s,
-  },
-  wordmark: {
-    color: colors.ink2,
-    fontSize: 11,
-    fontFamily: fonts.extra,
-    letterSpacing: 1.5,
-    marginLeft: spacing.xs,
-  },
-  dateChip: {
-    backgroundColor: colors.sky500,
-    borderRadius: radii.pill,
-    paddingVertical: 3,
-    paddingHorizontal: 10,
-  },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.s },
+  wordmark: { color: colors.ink2, fontSize: 11, fontFamily: fonts.extra, letterSpacing: 1.5, marginLeft: spacing.xs },
+  dateChip: { backgroundColor: colors.sky500, borderRadius: radii.pill, paddingVertical: 3, paddingHorizontal: 10 },
   dateChipText: { color: colors.white, fontSize: 11, fontFamily: fonts.extra },
+
+  chip: { borderRadius: radii.pill, paddingVertical: spacing.s + 1, paddingHorizontal: spacing.l, marginBottom: spacing.m },
+  armed: { backgroundColor: colors.mintBg },
+  armedText: { color: colors.green, fontSize: 12, fontFamily: fonts.extra },
+  ready: { backgroundColor: colors.bubble, ...shadows.bubble },
+  readyText: { color: colors.ink2, fontSize: 12, fontFamily: fonts.bold },
+  risk: { backgroundColor: colors.blushBg, borderRadius: radii.bubble - 4, padding: spacing.l - 2, marginBottom: spacing.m },
+  riskTitle: { color: colors.red, fontSize: 13, fontFamily: fonts.extra },
+  riskLine: { color: colors.blushText, fontSize: 11, fontFamily: fonts.semi, marginTop: 3, lineHeight: 16 },
+
   issue: {
     backgroundColor: colors.warnBg,
     color: colors.warnText,
@@ -275,8 +253,29 @@ const styles = StyleSheet.create({
     marginBottom: spacing.s - 2,
     overflow: 'hidden',
   },
-  chain: { gap: spacing.xs + 2 },
-  pillRow: { flexDirection: 'row', justifyContent: 'center', gap: spacing.s },
+
+  toolRow: { flexDirection: 'row', gap: spacing.s, marginTop: spacing.m },
+  addPill: {
+    flex: 1,
+    borderWidth: 2,
+    borderColor: '#A9CFF5',
+    borderStyle: 'dashed',
+    borderRadius: radii.bubble - 4,
+    paddingVertical: spacing.m - 1,
+    alignItems: 'center',
+  },
+  addPillText: { color: colors.sky700, fontSize: 13, fontFamily: fonts.extra },
+  reorder: {
+    borderRadius: radii.bubble - 4,
+    paddingVertical: spacing.m - 1,
+    paddingHorizontal: spacing.l,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.bubble,
+    ...shadows.bubble,
+  },
+  reorderText: { color: colors.ink2, fontSize: 13, fontFamily: fonts.bold },
+
   empty: {
     borderWidth: 2,
     borderColor: '#A9CFF5',
@@ -286,15 +285,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.skyBgBottom,
   },
-  emptyIcon: { fontSize: 30 },
-  emptyTitle: { color: colors.sky700, fontSize: 15, fontFamily: fonts.extra, marginTop: spacing.s },
-  emptySub: { color: colors.ink2, fontSize: 11, fontFamily: fonts.semi, marginTop: 3 },
+  emptyIcon: { fontSize: 34 },
+  emptyTitle: { color: colors.ink, fontSize: 18, fontFamily: fonts.extra, marginTop: spacing.m },
+  emptySub: { color: colors.ink2, fontSize: 12, fontFamily: fonts.semi, marginTop: 6, textAlign: 'center', lineHeight: 18 },
+  emptyBtnWrap: { marginTop: spacing.l, borderRadius: radii.pill, ...shadows.button },
+  emptyBtn: { borderRadius: radii.pill, paddingVertical: spacing.m + 1, paddingHorizontal: spacing.xxl + 6 },
+  emptyBtnText: { color: colors.white, fontSize: 14, fontFamily: fonts.extra },
+
   armWrap: { marginTop: spacing.xxl, ...shadows.button },
-  armInner: {
-    borderRadius: radii.pill,
-    paddingVertical: spacing.l + 1,
-    alignItems: 'center',
-  },
+  armInner: { borderRadius: radii.pill, paddingVertical: spacing.l + 1, alignItems: 'center' },
   disarm: { backgroundColor: colors.coral },
   armDisabled: { backgroundColor: colors.disabledBg },
   armText: { color: colors.white, fontSize: 15, fontFamily: fonts.extra },

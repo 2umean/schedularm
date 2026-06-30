@@ -1,12 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Chain } from '../domain';
+import { sanitizeArrival, sanitizePills, sanitizeZone } from './chainSanitize';
 
 /**
  * The *armed* v2 chain snapshot — only exists once an alarm is set. Distinct
- * from the editable draft (draftChain.ts). Mirrors armedSchedule.ts (v1) but
- * stores a Chain; light shape-guarding on load so a corrupt value can't crash
- * the arm-restore path (computeChain reads .pills).
+ * from the editable draft (draftChain.ts). Uses the SAME boundary sanitizers as
+ * draftChain so the arm-restore path (computeChain reads .pills via
+ * primaryEventInstant) can never see a malformed element.
  */
 const ARMED_KEY = 'schedularm.armed.v2';
 
@@ -22,9 +23,9 @@ export async function loadArmedChain(): Promise<Chain | null> {
     if (!c || typeof c !== 'object' || Array.isArray(c)) return null;
     const obj = c as Record<string, unknown>;
     return {
-      arrival: typeof obj.arrival === 'number' ? obj.arrival : null,
-      zone: typeof obj.zone === 'string' && obj.zone ? obj.zone : 'UTC',
-      pills: Array.isArray(obj.pills) ? (obj.pills as Chain['pills']) : [],
+      arrival: sanitizeArrival(obj.arrival),
+      zone: sanitizeZone(obj.zone),
+      pills: sanitizePills(obj.pills),
     };
   } catch {
     return null;

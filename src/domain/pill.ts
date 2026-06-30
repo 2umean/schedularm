@@ -8,8 +8,7 @@ import { Minutes } from './schedule';
  *   - 'push'  → a best-effort push notification (expo-notifications)
  *   - 'alarm' → a strong, OS-guaranteed wake alarm (bespoke native module)
  *
- * Replaces v1's fixed 4-duration Schedule (schedule.ts), which still backs the
- * current UI until Phase 2 swaps it over.
+ * Replaces v1's fixed 4-duration Schedule (removed in the Phase 2 cutover).
  */
 
 export type PillType = 'none' | 'push' | 'alarm';

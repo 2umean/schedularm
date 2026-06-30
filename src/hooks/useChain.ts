@@ -107,8 +107,11 @@ export function useChain() {
     }
   };
 
-  const addPill = (input: PillInput, index?: number) =>
-    dispatch({ type: 'add-pill', pill: { id: makeId(), ...input }, index });
+  const addPill = (input: PillInput, index?: number): string => {
+    const id = makeId();
+    dispatch({ type: 'add-pill', pill: { id, ...input }, index });
+    return id;
+  };
   const updatePill = (id: string, patch: Partial<PillInput>) =>
     dispatch({ type: 'update-pill', id, patch });
   const removePill = (id: string) => dispatch({ type: 'remove-pill', id });
