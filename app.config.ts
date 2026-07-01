@@ -1,11 +1,15 @@
 import { ExpoConfig } from 'expo/config';
 
+// Single source of truth for the marketing version — bump with `npm version`
+// (patch/minor/major). Build numbers are auto-incremented by EAS (remote).
+import { version } from './package.json';
+
 const config: ExpoConfig = {
   name: 'schedularm',
   slug: 'schedularm',
   owner: 'kgulag98',
   scheme: 'schedularm',
-  version: '0.1.0',
+  version,
   orientation: 'portrait',
   icon: './assets/icon.png',
   ios: {
