@@ -1,5 +1,5 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
   useAnimatedStyle,
@@ -39,34 +39,40 @@ export function ReorderView({ visible, pills, onClose, onReorder }: Props) {
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.screen}>
-        <View style={styles.header}>
-          <Pressable onPress={onClose} hitSlop={12}>
-            <Text style={styles.back}>‹</Text>
-          </Pressable>
-          <Text style={styles.title}>{t('chainScreen.reorderTitle')}</Text>
-        </View>
-        <Text style={styles.hint}>{t('chainScreen.reorderHint')}</Text>
+      {/* A RN Modal renders in a SEPARATE native view tree, outside the app-root
+          GestureHandlerRootView — so gestures inside it are dead unless the modal
+          content has its OWN GestureHandlerRootView. Without this, the drag never
+          activates. */}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={styles.screen}>
+          <View style={styles.header}>
+            <Pressable onPress={onClose} hitSlop={12}>
+              <Text style={styles.back}>‹</Text>
+            </Pressable>
+            <Text style={styles.title}>{t('chainScreen.reorderTitle')}</Text>
+          </View>
+          <Text style={styles.hint}>{t('chainScreen.reorderHint')}</Text>
 
-        <View style={{ height: pills.length * ROW_H }}>
-          {pills.map((pill, index) => (
-            <Row
-              key={pill.id}
-              pill={pill}
-              index={index}
-              count={pills.length}
-              draggingIndex={draggingIndex}
-              dragY={dragY}
-              onReorder={onReorder}
-            />
-          ))}
-        </View>
+          <View style={{ height: pills.length * ROW_H }}>
+            {pills.map((pill, index) => (
+              <Row
+                key={pill.id}
+                pill={pill}
+                index={index}
+                count={pills.length}
+                draggingIndex={draggingIndex}
+                dragY={dragY}
+                onReorder={onReorder}
+              />
+            ))}
+          </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerLabel}>{t('chainScreen.totalPrep')}</Text>
-          <Text style={styles.footerValue}>{formatDuration(total)}</Text>
+          <View style={styles.footer}>
+            <Text style={styles.footerLabel}>{t('chainScreen.totalPrep')}</Text>
+            <Text style={styles.footerValue}>{formatDuration(total)}</Text>
+          </View>
         </View>
-      </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
