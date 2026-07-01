@@ -1,6 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MAX_PILL_MINUTES, PillType, PILL_TYPES } from '../../domain';
 import { t } from '../../i18n';
@@ -29,6 +30,7 @@ export function PillEditorSheet({ visible, mode, initial, onCancel, onSubmit, on
   const [name, setName] = useState(initial.name);
   const [type, setType] = useState<PillType>(initial.type);
   const [dur, setDur] = useState(initial.dur);
+  const insets = useSafeAreaInsets();
   const seedParts = splitDuration(initial.dur);
   const [hStr, setHStr] = useState(String(seedParts.hours));
   const [mStr, setMStr] = useState(pad2(seedParts.mins));
@@ -56,7 +58,7 @@ export function PillEditorSheet({ visible, mode, initial, onCancel, onSubmit, on
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onCancel}>
       <Pressable style={styles.backdrop} onPress={onCancel} />
-      <View style={styles.sheet}>
+      <View style={[styles.sheet, { paddingBottom: spacing.xxl + insets.bottom }]}>
         <View style={styles.handle} />
         <Text style={styles.title}>
           {mode === 'create' ? t('pillEditor.createTitle') : t('pillEditor.editTitle')}

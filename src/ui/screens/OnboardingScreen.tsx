@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AlarmService } from '../../alarm/AlarmService';
 import { AlarmHealth } from '../../alarm/alarmHealth';
@@ -49,12 +50,19 @@ function Step({ title, desc, done, accent = 'sky', required = false, onFix }: St
 export function OnboardingScreen({ onDone }: Props) {
   const [health, setHealth] = useState<AlarmHealth>(() => AlarmService.getHealth());
   const refresh = () => setHealth(AlarmService.getHealth());
+  const insets = useSafeAreaInsets();
 
   const has = (r: AlarmHealth['reasons'][number]) => !health.reasons.includes(r);
   const isIos = Platform.OS === 'ios';
 
   return (
-    <ScrollView style={styles.screenWrap} contentContainerStyle={styles.screen}>
+    <ScrollView
+      style={styles.screenWrap}
+      contentContainerStyle={[
+        styles.screen,
+        { paddingTop: insets.top + spacing.l, paddingBottom: insets.bottom + spacing.xxl },
+      ]}
+    >
       <Text style={styles.hero}>🛫</Text>
       <Text style={styles.title}>{t('onboarding.title')}</Text>
       <Text style={styles.subtitle}>

@@ -1,5 +1,6 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   runOnJS,
   useAnimatedStyle,
@@ -22,8 +23,6 @@ type Props = {
 
 const ROW_H = 58; // fixed row height (incl. gap) — keeps the reorder math simple
 
-const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
-
 /**
  * Long-press drag-to-reorder (v2 design row 4). Rows are laid out at fixed
  * heights; the dragged row follows the finger while the others shift by one slot
@@ -36,6 +35,7 @@ export function ReorderView({ visible, pills, onClose, onReorder }: Props) {
   const draggingIndex = useSharedValue(-1);
   const dragY = useSharedValue(0);
   const total = pills.reduce((sum, p) => sum + p.dur, 0);
+  const insets = useSafeAreaInsets();
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
@@ -44,7 +44,7 @@ export function ReorderView({ visible, pills, onClose, onReorder }: Props) {
           content has its OWN GestureHandlerRootView. Without this, the drag never
           activates. */}
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <View style={styles.screen}>
+        <View style={[styles.screen, { paddingTop: insets.top + spacing.m }]}>
           <View style={styles.header}>
             <Pressable onPress={onClose} hitSlop={12}>
               <Text style={styles.back}>‹</Text>
@@ -67,7 +67,7 @@ export function ReorderView({ visible, pills, onClose, onReorder }: Props) {
             ))}
           </View>
 
-          <View style={styles.footer}>
+          <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.m }]}>
             <Text style={styles.footerLabel}>{t('chainScreen.totalPrep')}</Text>
             <Text style={styles.footerValue}>{formatDuration(total)}</Text>
           </View>
@@ -102,7 +102,10 @@ function Row({
       dragY.value = e.translationY;
     })
     .onEnd(() => {
-      const target = clamp(index + Math.round(dragY.value / ROW_H), 0, count - 1);
+      // Inline the clamp with Math built-ins — a worklet must NOT call a plain
+      // (non-worklet) helper on the UI thread, which crashes the app on release.
+      const raw = index + Math.round(dragY.value / ROW_H);
+      const target = Math.min(count - 1, Math.max(0, raw));
       if (target !== index) runOnJS(onReorder)(index, target);
       draggingIndex.value = -1;
       dragY.value = 0;

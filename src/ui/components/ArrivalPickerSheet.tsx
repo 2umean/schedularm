@@ -2,6 +2,7 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { t } from '../../i18n';
 import { colors, fonts, radii, shadows, spacing } from '../theme';
@@ -21,6 +22,7 @@ type Props = {
  */
 export function ArrivalPickerSheet({ visible, initial, onCancel, onConfirm }: Props) {
   const [value, setValue] = useState<Date>(initial);
+  const insets = useSafeAreaInsets();
 
   // The sheet stays mounted (visible toggles), so re-seed the spinner on each
   // open. Keyed on `visible` only — not `initial` — so scrolling while open
@@ -49,7 +51,7 @@ export function ArrivalPickerSheet({ visible, initial, onCancel, onConfirm }: Pr
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onCancel}>
       <Pressable style={styles.backdrop} onPress={onCancel} />
-      <View style={styles.sheet}>
+      <View style={[styles.sheet, { paddingBottom: spacing.xxl + 2 + insets.bottom }]}>
         <View style={styles.handle} />
         <Text style={styles.title}>{t('arrivalPicker.title')}</Text>
         <Text style={styles.subtitle}>{t('arrivalPicker.subtitle')}</Text>

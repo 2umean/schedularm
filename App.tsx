@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AlarmService } from './src/alarm/AlarmService';
 import { isOnboarded, markOnboarded } from './src/storage/onboarding';
@@ -51,17 +52,19 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      {route === 'onboarding' ? (
-        <OnboardingScreen
-          onDone={async () => {
-            await markOnboarded();
-            setRoute('chain');
-          }}
-        />
-      ) : (
-        <ChainScreen />
-      )}
-      <StatusBar style="dark" />
+      <SafeAreaProvider>
+        {route === 'onboarding' ? (
+          <OnboardingScreen
+            onDone={async () => {
+              await markOnboarded();
+              setRoute('chain');
+            }}
+          />
+        ) : (
+          <ChainScreen />
+        )}
+        <StatusBar style="dark" />
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

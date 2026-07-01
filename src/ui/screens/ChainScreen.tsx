@@ -1,6 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AlarmService } from '../../alarm/AlarmService';
 import {
@@ -35,6 +36,7 @@ export function ChainScreen() {
   const [editor, setEditor] = useState<EditorState>(null);
   const [reorderOpen, setReorderOpen] = useState(false);
   const [highlightId, setHighlightId] = useState<string | undefined>(undefined);
+  const insets = useSafeAreaInsets();
 
   const atRisk = !health.isArmReliable || health.reasons.length > 0;
 
@@ -76,7 +78,12 @@ export function ChainScreen() {
 
   return (
     <LinearGradient colors={[colors.skyBgTop, colors.skyBgBottom]} style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: insets.top + spacing.m, paddingBottom: insets.bottom + spacing.xxl },
+        ]}
+      >
         <View style={styles.header}>
           <Text style={styles.wordmark}>{t('chain.wordmark')}</Text>
           {armedInfo?.date ? (
