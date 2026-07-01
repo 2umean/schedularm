@@ -50,7 +50,7 @@ export const ko: typeof en = {
     pill: { title: '🔔 {{name}} 종료', body: '{{time}}에 나가면 {{arrival}} 도착에 맞아요.' },
   },
 
-  // ----- v2 (Schedularm UI v2 — 펄 체인) -----
+  // ----- v2 (Schedularm UI v2 — 이벤트 체인) -----
   pill: {
     sleep: '수면',
     shower: '샤워',
@@ -66,7 +66,7 @@ export const ko: typeof en = {
     emptySub: '도착 시간을 정하면 나머지는 거꾸로 계산해 드려요',
     setArrival: '도착 시간 설정 ✈',
     arrivalSummary: '🛬 도착 {{time}}',
-    addPill: '＋ 펄 추가',
+    addPill: '＋ 이벤트 추가',
     bedtime: '취침',
     anchorLabel: '도착',
     badge: { push: '알림', alarm: '알람' },
@@ -74,7 +74,7 @@ export const ko: typeof en = {
     armedSummary: '✓ 알람 설정됨 · {{label}} {{time}}',
     totalPrep: '총 준비 시간',
     reorder: '순서 변경',
-    reorderTitle: '펄 순서 편집',
+    reorderTitle: '이벤트 순서 편집',
     reorderHint: '⋮⋮ 를 길게 눌러 위아래로 끌어요',
   },
   arrivalPicker: {
@@ -82,10 +82,10 @@ export const ko: typeof en = {
     subtitle: '도착 시간만 정하면 나머지는 거꾸로 계산해 드려요.',
   },
   pillEditor: {
-    createTitle: '새 펄 만들기',
-    editTitle: '펄 편집',
+    createTitle: '새 이벤트 만들기',
+    editTitle: '이벤트 편집',
     namePlaceholder: '이름',
-    typeSection: '타입 — 펄이 끝나면?',
+    typeSection: '타입 — 이벤트가 끝나면?',
     hintNone: '‘없음’ — 시간 계산에만 쓰여요.',
     hintPush: '끝나면 푸시 알림 + ‘{{label}}’ 행이 떠요.',
     hintAlarm: '끝나면 강한 기상 알람이 울려요.',
@@ -96,10 +96,10 @@ export const ko: typeof en = {
   },
   chainIssue: {
     'no-arrival': '도착 시간을 설정해 주세요.',
-    'pill-out-of-range': '펄 시간이 허용 범위를 벗어났어요.',
+    'pill-out-of-range': '이벤트 시간이 허용 범위를 벗어났어요.',
     infeasible: '불가능한 일정이에요 — 음수 시간이 생겨요.',
     'chain-too-long': '전체 일정이 비현실적으로 길어요.',
-    'no-alarm': '⏰ 알람 펄을 추가해 주세요 — 알림만으로는 확실히 깨우지 못해요.',
+    'no-alarm': '⏰ 알람 이벤트를 추가해 주세요 — 알림만으로는 확실히 깨우지 못해요.',
     'past-event': '이미 지난 일정이에요.',
     'bedtime-passed': '주의: 시작 시간이 이미 지났어요.',
   },
